@@ -1,4 +1,4 @@
-// src/components/auth/Register.js - Debug version
+// src/components/auth/Register.jsx - Debug version
 import React, { useState } from 'react';
 import { 
   Container, 
@@ -39,6 +39,35 @@ const Register = () => {
     setLocalError(null);
   };
 
+  const validateForm = () => {
+    if (!formData.username || !formData.email || !formData.password || !formData.confirm_password) {
+      setLocalError('Please fill in all required fields');
+      return false;
+    }
+
+    if (formData.username.length < 3) {
+      setLocalError('Username must be at least 3 characters long');
+      return false;
+    }
+
+    if (formData.password.length < 8) {
+      setLocalError('Password must be at least 8 characters long');
+      return false;
+    }
+
+    if (formData.password !== formData.confirm_password) {
+      setLocalError('Passwords do not match');
+      return false;
+    }
+
+    if (!agreedToTerms) {
+      setLocalError('Please agree to the terms');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -55,29 +84,7 @@ const Register = () => {
       bio: formData.bio
     });
 
-    // Basic validation
-    if (!formData.username || !formData.email || !formData.password || !formData.confirm_password) {
-      setLocalError('Please fill in all required fields');
-      return;
-    }
-
-    if (formData.username.length < 3) {
-      setLocalError('Username must be at least 3 characters long');
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setLocalError('Password must be at least 8 characters long');
-      return;
-    }
-
-    if (formData.password !== formData.confirm_password) {
-      setLocalError('Passwords do not match');
-      return;
-    }
-
-    if (!agreedToTerms) {
-      setLocalError('Please agree to the terms');
+    if (!validateForm()) {
       return;
     }
 
@@ -177,7 +184,7 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
-              helperText="At least 8 characters with upper, lower, and number"
+              helperText="At least 8 characters"
             />
 
             <TextField
@@ -232,20 +239,22 @@ const Register = () => {
           </Box>
           
           {/* Debug Section */}
-          <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-            <Typography variant="caption" display="block">
-              API URL: {process.env.REACT_APP_API_URL || 'http://localhost:8000'}
-            </Typography>
-            <Typography variant="caption" display="block">
-              Form valid: {JSON.stringify({
-                username: formData.username.length >= 3,
-                email: formData.email.includes('@'),
-                password: formData.password.length >= 8,
-                match: formData.password === formData.confirm_password,
-                terms: agreedToTerms
-              })}
-            </Typography>
-          </Box>
+          {process.env.NODE_ENV === 'development' && (
+            <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="caption" display="block">
+                API URL: {process.env.REACT_APP_API_URL || 'http://localhost:8000'}
+              </Typography>
+              <Typography variant="caption" display="block">
+                Form valid: {JSON.stringify({
+                  username: formData.username.length >= 3,
+                  email: formData.email.includes('@'),
+                  password: formData.password.length >= 8,
+                  match: formData.password === formData.confirm_password,
+                  terms: agreedToTerms
+                })}
+              </Typography>
+            </Box>
+          )}
         </Paper>
       </Box>
     </Container>

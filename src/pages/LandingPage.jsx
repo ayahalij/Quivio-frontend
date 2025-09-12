@@ -1,5 +1,5 @@
-// src/pages/LandingPage.js
-import React from 'react'
+// src/pages/LandingPage.jsx
+import React from 'react';
 import { 
   Container, 
   Box, 
@@ -9,18 +9,17 @@ import {
   Card, 
   CardContent,
   Chip
-} 
-from '@mui/material'
+} from '@mui/material';
 import { 
   Mood, 
   EditNote, 
   CameraAlt, 
   Timeline 
-} from '@mui/icons-material'
-import { useNavigate } from 'react-router-dom'
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const features = [
     {
@@ -43,7 +42,7 @@ const LandingPage = () => {
       title: 'Timeline & Memories',
       description: 'View your entries on a calendar, search past memories, and track your emotional patterns.'
     }
-  ]
+  ];
 
   return (
     <Container maxWidth="lg">
@@ -152,7 +151,7 @@ const LandingPage = () => {
         </Button>
       </Box>
     </Container>
-  )
-}
+  );
+};
 
-export default LandingPage
+export default LandingPage;

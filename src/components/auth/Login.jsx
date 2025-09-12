@@ -1,4 +1,4 @@
-// src/components/auth/Login.js
+// src/components/auth/Login.jsx
 import React, { useState } from 'react';
 import { 
   Container, 

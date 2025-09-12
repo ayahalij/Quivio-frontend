@@ -160,6 +160,21 @@ class ApiService {
     const response = await this.api.get('/analytics/insights');
     return response.data;
     }
+
+    // Photo endpoints
+    async getPhotoLocations(startDate = null, endDate = null) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const response = await this.api.get(`/photos/locations?${params}`);
+    return response.data;
+    }
+
+    async getPhotoStats() {
+    const response = await this.api.get('/photos/stats');
+    return response.data;
+    }
 }
 
 const apiService = new ApiService()

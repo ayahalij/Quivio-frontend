@@ -1,4 +1,4 @@
-// src/pages/Dashboard.js - Complete Dashboard with Profile
+// src/pages/Dashboard.js - Updated to integrate Map with Timeline
 import React, { useState } from 'react';
 import { 
   Container, 
@@ -158,17 +158,17 @@ const Dashboard = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Upload Photo
+                  Add Photo Memory
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Capture and save special moments from your day as photo memories.
+                  Capture and save special moments from your day with location data.
                 </Typography>
                 <Button 
                   variant="contained" 
                   fullWidth
                   onClick={() => setPhotoDialogOpen(true)}
                 >
-                  Add Photo Memory
+                  Upload Photo
                 </Button>
               </CardContent>
             </Card>
@@ -178,17 +178,17 @@ const Dashboard = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Timeline & Search
+                  Calendar View
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Browse your past entries in calendar view and search through your memories.
+                  Browse your past entries and moods in an organized calendar layout.
                 </Typography>
                 <Button 
                   variant="contained" 
                   fullWidth
                   onClick={() => navigate('/timeline')}
                 >
-                  View Timeline
+                  View Calendar
                 </Button>
               </CardContent>
             </Card>
@@ -198,17 +198,38 @@ const Dashboard = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Profile & Settings
+                  Search Memories
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Manage your account, view statistics, and customize your experience.
+                  Find specific entries, thoughts, and moments from your journaling history.
                 </Typography>
                 <Button 
                   variant="contained" 
                   fullWidth
-                  onClick={() => navigate('/profile')}
+                  onClick={() => navigate('/timeline?tab=1')}
                 >
-                  View Profile
+                  Search Entries
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Row 3 - Additional Features */}
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Photo Map
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Explore your photo memories on an interactive world map.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  onClick={() => navigate('/timeline?tab=2')}
+                >
+                  View Photo Map
                 </Button>
               </CardContent>
             </Card>
@@ -229,6 +250,26 @@ const Dashboard = () => {
                   onClick={() => navigate('/capsules')}
                 >
                   View Capsules
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Profile & Settings
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Manage your account, view statistics, and customize your experience.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  onClick={() => navigate('/profile')}
+                >
+                  View Profile
                 </Button>
               </CardContent>
             </Card>

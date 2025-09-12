@@ -1,4 +1,4 @@
-// src/pages/TimelinePage.js - Enhanced with Search
+// src/pages/TimelinePage.js - Complete Integrated Timeline with Calendar, Search & Map
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -19,7 +19,15 @@ import {
   TextField,
   InputAdornment,
   Tabs,
-  Tab
+  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   ChevronLeft,
@@ -29,11 +37,28 @@ import {
   CameraAlt,
   Search,
   Clear,
-  Edit
+  Edit,
+  Map as MapIcon,
+  PhotoCamera,
+  LocationOn,
+  Close,
+  Home
 } from '@mui/icons-material';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useAuth } from '../contexts/AuthContext';
 import ApiService from '../services/api';
 import dayjs from 'dayjs';
+import { useLocation, useNavigate } from 'react-router-dom';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default markers in Leaflet with React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const MOOD_COLORS = {
   1: '#f44336', // Very Sad - Red
@@ -51,9 +76,33 @@ const MOOD_EMOJIS = {
   5: '😄'
 };
 
+// Custom marker for photo locations
+const photoIcon = new L.Icon({
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 const TimelinePage = () => {
   const { user, logout } = useAuth();
-  const [currentTab, setCurrentTab] = useState(0); // 0 = Calendar, 1 = Search
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get initial tab from URL parameters
+  const getInitialTab = () => {
+    const urlParams = new URLSearchParams(location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['0', '1', '2'].includes(tabParam)) {
+      return parseInt(tabParam);
+    }
+    return 0; // Default to calendar
+  };
+
+  const [currentTab, setCurrentTab] = useState(getInitialTab());
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -67,11 +116,30 @@ const TimelinePage = () => {
   const [searchError, setSearchError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Map state
+  const [locations, setLocations] = useState([]);
+  const [mapLoading, setMapLoading] = useState(false);
+  const [mapError, setMapError] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [photoStats, setPhotoStats] = useState(null);
+  const [timeFilter, setTimeFilter] = useState('all');
+
+  // Update URL when tab changes
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+    const newUrl = newValue === 0 ? '/timeline' : `/timeline?tab=${newValue}`;
+    navigate(newUrl, { replace: true });
+  };
+
   useEffect(() => {
     if (currentTab === 0) {
       fetchCalendarData();
+    } else if (currentTab === 2) {
+      fetchPhotoLocations();
+      fetchPhotoStats();
     }
-  }, [currentDate, currentTab]);
+  }, [currentDate, currentTab, timeFilter]);
 
   const fetchCalendarData = async () => {
     setLoading(true);
@@ -88,6 +156,41 @@ const TimelinePage = () => {
       setError('Failed to load calendar data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPhotoLocations = async () => {
+    setMapLoading(true);
+    setMapError('');
+
+    try {
+      let startDate = null;
+      let endDate = null;
+
+      if (timeFilter === '7days') {
+        startDate = dayjs().subtract(7, 'day').format('YYYY-MM-DD');
+      } else if (timeFilter === '30days') {
+        startDate = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
+      } else if (timeFilter === '90days') {
+        startDate = dayjs().subtract(90, 'day').format('YYYY-MM-DD');
+      }
+
+      const response = await ApiService.getPhotoLocations(startDate, endDate);
+      setLocations(response.locations || []);
+    } catch (error) {
+      console.error('Failed to fetch photo locations:', error);
+      setMapError('Failed to load photo locations');
+    } finally {
+      setMapLoading(false);
+    }
+  };
+
+  const fetchPhotoStats = async () => {
+    try {
+      const response = await ApiService.getPhotoStats();
+      setPhotoStats(response);
+    } catch (error) {
+      console.error('Failed to fetch photo stats:', error);
     }
   };
 
@@ -178,6 +281,39 @@ const TimelinePage = () => {
     }
   };
 
+  const handleMarkerClick = (location) => {
+    setSelectedLocation(location);
+    setLocationDialogOpen(true);
+  };
+
+  const getMapCenter = () => {
+    if (locations.length === 0) {
+      return [25.9, 50.5]; // Default to Bahrain (user's location)
+    }
+
+    const latSum = locations.reduce((sum, loc) => sum + loc.lat, 0);
+    const lngSum = locations.reduce((sum, loc) => sum + loc.lng, 0);
+    
+    return [latSum / locations.length, lngSum / locations.length];
+  };
+
+  const getMapZoom = () => {
+    if (locations.length === 0) return 8;
+    if (locations.length === 1) return 12;
+    
+    const lats = locations.map(loc => loc.lat);
+    const lngs = locations.map(loc => loc.lng);
+    
+    const latRange = Math.max(...lats) - Math.min(...lats);
+    const lngRange = Math.max(...lngs) - Math.min(...lngs);
+    const maxRange = Math.max(latRange, lngRange);
+    
+    if (maxRange > 10) return 3;
+    if (maxRange > 5) return 5;
+    if (maxRange > 1) return 8;
+    return 10;
+  };
+
   const renderDayCard = (day) => {
     if (!day) {
       return <Box key={`empty-${Math.random()}`} sx={{ height: 80 }} />;
@@ -229,7 +365,7 @@ const TimelinePage = () => {
               )}
               
               {dayData.diary && (
-                <Event sx={{ fontSize: 12, color: '#666' }} />
+                <Edit sx={{ fontSize: 12, color: '#666' }} />
               )}
               
               {dayData.photos && dayData.photos.length > 0 && (
@@ -247,8 +383,15 @@ const TimelinePage = () => {
       {/* Navigation Bar */}
       <AppBar position="static" elevation={1}>
         <Toolbar>
+          <IconButton 
+            color="inherit" 
+            onClick={() => navigate('/dashboard')}
+            sx={{ mr: 2 }}
+          >
+            <Home />
+          </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Timeline & Search
+            Timeline & Memories
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar sx={{ width: 32, height: 32 }}>
@@ -269,11 +412,12 @@ const TimelinePage = () => {
         <Paper sx={{ mb: 3 }}>
           <Tabs 
             value={currentTab} 
-            onChange={(e, newValue) => setCurrentTab(newValue)}
+            onChange={handleTabChange}
             centered
           >
             <Tab label="Calendar View" icon={<Event />} />
             <Tab label="Search Memories" icon={<Search />} />
+            <Tab label="Photo Map" icon={<MapIcon />} />
           </Tabs>
         </Paper>
 
@@ -353,7 +497,6 @@ const TimelinePage = () => {
               </Typography>
             </Box>
 
-            {/* Search Input */}
             <TextField
               fullWidth
               placeholder="Search your memories, moods, and thoughts..."
@@ -394,7 +537,6 @@ const TimelinePage = () => {
               </Alert>
             )}
 
-            {/* Search Results */}
             {hasSearched && (
               <Box>
                 <Typography variant="h6" gutterBottom>
@@ -494,6 +636,151 @@ const TimelinePage = () => {
           </Paper>
         )}
 
+        {/* Photo Map Tab */}
+        {currentTab === 2 && (
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h5">Photo Map</Typography>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Time Filter</InputLabel>
+                <Select
+                  value={timeFilter}
+                  label="Time Filter"
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                >
+                  <MenuItem value="all">All Time</MenuItem>
+                  <MenuItem value="7days">Last 7 Days</MenuItem>
+                  <MenuItem value="30days">Last 30 Days</MenuItem>
+                  <MenuItem value="90days">Last 3 Months</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {mapError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {mapError}
+              </Alert>
+            )}
+
+            {/* Statistics Cards */}
+            {photoStats && (
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={4}>
+                  <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <PhotoCamera color="primary" sx={{ fontSize: 40, mb: 1 }} />
+                      <Typography variant="h4">{photoStats.total_photos}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Photos
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <LocationOn color="success" sx={{ fontSize: 40, mb: 1 }} />
+                      <Typography variant="h4">{photoStats.photos_with_location}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        With Location
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Card>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="primary">
+                        {photoStats.location_percentage.toFixed(0)}%
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Location Coverage
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            )}
+
+            {/* Map */}
+            <Card sx={{ height: 500 }}>
+              <CardContent sx={{ height: '100%', p: 0 }}>
+                {mapLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <CircularProgress />
+                  </Box>
+                ) : locations.length === 0 ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <LocationOn sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      No photos with location data
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', px: 2 }}>
+                      Upload photos with location enabled to see them on the map
+                    </Typography>
+                  </Box>
+                ) : (
+                  <MapContainer
+                    center={getMapCenter()}
+                    zoom={getMapZoom()}
+                    style={{ height: '100%', width: '100%' }}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    {locations.map((location, index) => (
+                      <Marker
+                        key={index}
+                        position={[location.lat, location.lng]}
+                        icon={photoIcon}
+                        eventHandlers={{
+                          click: () => handleMarkerClick(location)
+                        }}
+                      >
+                        <Popup>
+                          <Box sx={{ minWidth: 200 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              {location.location_name || 'Unknown Location'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {location.photos.length} photo{location.photos.length !== 1 ? 's' : ''}
+                            </Typography>
+                            <Button
+                              size="small"
+                              onClick={() => handleMarkerClick(location)}
+                              sx={{ mt: 1 }}
+                            >
+                              View Photos
+                            </Button>
+                          </Box>
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </MapContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Map Instructions */}
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  How to Add Photos to the Map
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  To see your photos on this map, enable location services when uploading photos through the "Add Photo Memory" feature on your dashboard.
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Chip label="Enable location on your device" size="small" variant="outlined" />
+                  <Chip label="Allow location access when uploading" size="small" variant="outlined" />
+                  <Chip label="Photos will automatically appear on the map" size="small" variant="outlined" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
         {/* Day Detail Modal */}
         {selectedDay && (
           <Paper sx={{ mt: 3, p: 3 }}>
@@ -546,7 +833,7 @@ const TimelinePage = () => {
                           <Typography variant="body2">{photo.title}</Typography>
                           {photo.has_location && (
                             <Typography variant="caption" color="text.secondary">
-                              📍 Location saved
+                              Location saved
                             </Typography>
                           )}
                         </CardContent>
@@ -573,6 +860,66 @@ const TimelinePage = () => {
             )}
           </Paper>
         )}
+
+        {/* Location Details Dialog for Map */}
+        <Dialog open={locationDialogOpen} onClose={() => setLocationDialogOpen(false)} maxWidth="md" fullWidth>
+          {selectedLocation && (
+            <>
+              <DialogTitle>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="h6">
+                      {selectedLocation.location_name || 'Unknown Location'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedLocation.photos.length} photo{selectedLocation.photos.length !== 1 ? 's' : ''} taken here
+                    </Typography>
+                  </Box>
+                  <Button onClick={() => setLocationDialogOpen(false)}>
+                    <Close />
+                  </Button>
+                </Box>
+              </DialogTitle>
+              <DialogContent>
+                <Grid container spacing={2}>
+                  {selectedLocation.photos.map((photo, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                      <Card>
+                        <CardContent>
+                          <Typography variant="subtitle2" gutterBottom>
+                            {photo.title}
+                          </Typography>
+                          <Chip
+                            label={dayjs(photo.date).format('MMM D, YYYY')}
+                            size="small"
+                            variant="outlined"
+                          />
+                          {photo.url && (
+                            <Box sx={{ mt: 2 }}>
+                              <img
+                                src={photo.url}
+                                alt={photo.title}
+                                style={{
+                                  width: '100%',
+                                  height: 120,
+                                  objectFit: 'cover',
+                                  borderRadius: 4
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </DialogContent>
+            </>
+          )}
+        </Dialog>
       </Container>
     </Box>
   );
