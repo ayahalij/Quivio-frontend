@@ -18,6 +18,7 @@ import MoodTracker from '../components/daily/MoodTracker';
 import DiaryEntry from '../components/daily/DiaryEntry';
 import DailyChallenge from '../components/challenges/DailyChallenge';
 import { useNavigate } from 'react-router-dom';
+import PhotoUpload from '../components/daily/PhotoUpload';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -26,6 +27,7 @@ const Dashboard = () => {
   const [challengeDialogOpen, setChallengeDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -43,6 +45,11 @@ const Dashboard = () => {
 
   const handleChallengeSuccess = () => {
     setSuccessMessage('Challenge completed! Well done!');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const handlePhotoSuccess = (result) => {
+    setSuccessMessage(`Photo "${result.title}" uploaded successfully!`);
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
@@ -165,6 +172,26 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Upload Photo
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Capture and save special moments from your day as photo memories.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  onClick={() => setPhotoDialogOpen(true)}
+                >
+                  Add Photo Memory
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
 
         {/* Recent Activity */}
@@ -199,6 +226,12 @@ const Dashboard = () => {
         open={challengeDialogOpen}
         onClose={() => setChallengeDialogOpen(false)}
         onSuccess={handleChallengeSuccess}
+      />
+
+      <PhotoUpload
+        open={photoDialogOpen}
+        onClose={() => setPhotoDialogOpen(false)}
+        onSuccess={handlePhotoSuccess}
       />
     </Box>
   );
