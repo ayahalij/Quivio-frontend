@@ -8,6 +8,7 @@ import Register from './components/auth/Register'
 import Dashboard from './pages/Dashboard'
 import LandingPage from './pages/LandingPage'
 import Timeline from './pages/TimelinePage'
+import ProfilePage from './pages/ProfilePage'
 
 const theme = createTheme({
   palette: {
@@ -78,9 +79,6 @@ function App() {
               } 
             />
             
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-
             <Route 
               path="/timeline" 
               element={
@@ -89,6 +87,18 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Catch all route - MUST BE LAST */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </AuthProvider>

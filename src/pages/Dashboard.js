@@ -1,4 +1,4 @@
-// src/pages/Dashboard.js - Complete Dashboard
+// src/pages/Dashboard.js - Complete Dashboard with Profile
 import React, { useState } from 'react';
 import { 
   Container, 
@@ -92,7 +92,7 @@ const Dashboard = () => {
         )}
 
         <Grid container spacing={3} sx={{ mt: 2 }}>
-          {/* Quick Actions */}
+          {/* Row 1 - Core Daily Features */}
           <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
@@ -153,6 +153,27 @@ const Dashboard = () => {
             </Card>
           </Grid>
 
+          {/* Row 2 - Additional Features */}
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Upload Photo
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Capture and save special moments from your day as photo memories.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  onClick={() => setPhotoDialogOpen(true)}
+                >
+                  Add Photo Memory
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+
           <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
@@ -177,17 +198,17 @@ const Dashboard = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Upload Photo
+                  Profile & Settings
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Capture and save special moments from your day as photo memories.
+                  Manage your account, view statistics, and customize your experience.
                 </Typography>
                 <Button 
                   variant="contained" 
                   fullWidth
-                  onClick={() => setPhotoDialogOpen(true)}
+                  onClick={() => navigate('/profile')}
                 >
-                  Add Photo Memory
+                  View Profile
                 </Button>
               </CardContent>
             </Card>
