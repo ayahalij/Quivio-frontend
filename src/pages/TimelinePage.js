@@ -1,4 +1,4 @@
-// src/pages/TimelinePage.js
+// src/pages/TimelinePage.js - Enhanced with Search
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -15,7 +15,11 @@ import {
   CircularProgress,
   AppBar,
   Toolbar,
-  Avatar
+  Avatar,
+  TextField,
+  InputAdornment,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   ChevronLeft,
@@ -23,10 +27,13 @@ import {
   Mood,
   Event,
   CameraAlt,
-  Search
+  Search,
+  Clear,
+  Edit
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import ApiService from '../services/api';
+import dayjs from 'dayjs';
 
 const MOOD_COLORS = {
   1: '#f44336', // Very Sad - Red
@@ -46,15 +53,25 @@ const MOOD_EMOJIS = {
 
 const TimelinePage = () => {
   const { user, logout } = useAuth();
+  const [currentTab, setCurrentTab] = useState(0); // 0 = Calendar, 1 = Search
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
 
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+
   useEffect(() => {
-    fetchCalendarData();
-  }, [currentDate]);
+    if (currentTab === 0) {
+      fetchCalendarData();
+    }
+  }, [currentDate, currentTab]);
 
   const fetchCalendarData = async () => {
     setLoading(true);
@@ -62,10 +79,9 @@ const TimelinePage = () => {
 
     try {
       const year = currentDate.getFullYear();
-      const month = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+      const month = currentDate.getMonth() + 1;
       
       const result = await ApiService.getCalendarData(year, month);
-      console.log('Calendar data:', result);
       setCalendarData(result);
     } catch (error) {
       console.error('Failed to fetch calendar data:', error);
@@ -73,6 +89,50 @@ const TimelinePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      setSearchError('Please enter a search term');
+      return;
+    }
+
+    setSearchLoading(true);
+    setSearchError('');
+    setHasSearched(true);
+
+    try {
+      const results = await ApiService.searchEntries(searchTerm.trim());
+      setSearchResults(results.results || []);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchError('Search failed. Please try again.');
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setSearchResults([]);
+    setSearchError('');
+    setHasSearched(false);
+  };
+
+  const highlightSearchTerm = (text, term) => {
+    if (!term || !text) return text;
+    
+    const regex = new RegExp(`(${term})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <mark key={index} style={{ backgroundColor: '#ffeb3b', padding: '0 2px' }}>
+          {part}
+        </mark>
+      ) : part
+    );
   };
 
   const navigateMonth = (direction) => {
@@ -87,16 +147,14 @@ const TimelinePage = () => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay(); // 0 = Sunday
+    const startingDay = firstDay.getDay();
 
     const days = [];
     
-    // Add empty cells for days before the month starts
     for (let i = 0; i < startingDay; i++) {
       days.push(null);
     }
     
-    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(day);
     }
@@ -190,7 +248,7 @@ const TimelinePage = () => {
       <AppBar position="static" elevation={1}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Timeline & Calendar
+            Timeline & Search
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar sx={{ width: 32, height: 32 }}>
@@ -207,31 +265,16 @@ const TimelinePage = () => {
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 4 }}>
-        {/* Calendar Header */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <IconButton onClick={() => navigateMonth(-1)}>
-              <ChevronLeft />
-            </IconButton>
-            
-            <Typography variant="h5">
-              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </Typography>
-            
-            <IconButton onClick={() => navigateMonth(1)}>
-              <ChevronRight />
-            </IconButton>
-          </Box>
-
-          {calendarData && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
-              <Chip 
-                label={`${calendarData.total_days_with_entries} days with entries`} 
-                color="primary" 
-                size="small" 
-              />
-            </Box>
-          )}
+        {/* Tabs */}
+        <Paper sx={{ mb: 3 }}>
+          <Tabs 
+            value={currentTab} 
+            onChange={(e, newValue) => setCurrentTab(newValue)}
+            centered
+          >
+            <Tab label="Calendar View" icon={<Event />} />
+            <Tab label="Search Memories" icon={<Search />} />
+          </Tabs>
         </Paper>
 
         {error && (
@@ -240,35 +283,218 @@ const TimelinePage = () => {
           </Alert>
         )}
 
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
+        {/* Calendar Tab */}
+        {currentTab === 0 && (
           <>
-            {/* Days of the week header */}
-            <Grid container spacing={1} sx={{ mb: 1 }}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <Grid item xs key={day} sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                    {day}
-                  </Typography>
-                </Grid>
-              ))}
-            </Grid>
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <IconButton onClick={() => navigateMonth(-1)}>
+                  <ChevronLeft />
+                </IconButton>
+                
+                <Typography variant="h5">
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </Typography>
+                
+                <IconButton onClick={() => navigateMonth(1)}>
+                  <ChevronRight />
+                </IconButton>
+              </Box>
 
-            {/* Calendar Grid */}
-            <Grid container spacing={1}>
-              {getDaysInMonth().map((day, index) => (
-                <Grid item xs key={index} sx={{ display: 'flex' }}>
-                  {renderDayCard(day)}
+              {calendarData && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
+                  <Chip 
+                    label={`${calendarData.total_days_with_entries} days with entries`} 
+                    color="primary" 
+                    size="small" 
+                  />
+                </Box>
+              )}
+            </Paper>
+
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <>
+                <Grid container spacing={1} sx={{ mb: 1 }}>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <Grid item xs key={day} sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                        {day}
+                      </Typography>
+                    </Grid>
+                  ))}
                 </Grid>
-              ))}
-            </Grid>
+
+                <Grid container spacing={1}>
+                  {getDaysInMonth().map((day, index) => (
+                    <Grid item xs key={index} sx={{ display: 'flex' }}>
+                      {renderDayCard(day)}
+                    </Grid>
+                  ))}
+                </Grid>
+              </>
+            )}
           </>
         )}
 
-        {/* Day Detail Modal/Section */}
+        {/* Search Tab */}
+        {currentTab === 1 && (
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Search sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+              <Typography variant="h5" gutterBottom>
+                Search Your Journey
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Find specific memories, thoughts, and moments from your journaling history.
+              </Typography>
+            </Box>
+
+            {/* Search Input */}
+            <TextField
+              fullWidth
+              placeholder="Search your memories, moods, and thoughts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm && (
+                  <InputAdornment position="end">
+                    <IconButton onClick={clearSearch} size="small">
+                      <Clear />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+              sx={{ mb: 2 }}
+            />
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+              <Button
+                variant="contained"
+                onClick={handleSearch}
+                disabled={searchLoading || !searchTerm.trim()}
+                startIcon={searchLoading ? <CircularProgress size={20} /> : <Search />}
+              >
+                Search
+              </Button>
+            </Box>
+
+            {searchError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {searchError}
+              </Alert>
+            )}
+
+            {/* Search Results */}
+            {hasSearched && (
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Search Results
+                  {searchResults.length > 0 && (
+                    <Chip 
+                      label={`${searchResults.length} result${searchResults.length !== 1 ? 's' : ''}`}
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+
+                {searchLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : searchResults.length === 0 ? (
+                  <Card>
+                    <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                      <Search sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                      <Typography color="text.secondary">
+                        No results found for "{searchTerm}"
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Try different keywords or check your spelling
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Grid container spacing={2}>
+                    {searchResults.map((result, index) => (
+                      <Grid item xs={12} key={index}>
+                        <Card 
+                          sx={{ 
+                            '&:hover': { boxShadow: 2 },
+                            border: result.type === 'diary' ? '1px solid #e3f2fd' : '1px solid #f3e5f5'
+                          }}
+                        >
+                          <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {result.type === 'diary' ? (
+                                  <Edit color="primary" />
+                                ) : (
+                                  <Mood color="secondary" />
+                                )}
+                                <Typography variant="h6">
+                                  {result.type === 'diary' ? 'Diary Entry' : 'Mood Note'}
+                                </Typography>
+                                {result.mood_level && (
+                                  <Typography variant="h6">
+                                    {MOOD_EMOJIS[result.mood_level]}
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Chip
+                                label={dayjs(result.date).format('MMM D, YYYY')}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+
+                            <Typography variant="body1" paragraph>
+                              {highlightSearchTerm(result.excerpt, searchTerm)}
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                              <Chip
+                                label={result.type === 'diary' ? 'Diary' : 'Mood'}
+                                size="small"
+                                color={result.type === 'diary' ? 'primary' : 'secondary'}
+                              />
+                              {result.word_count && (
+                                <Chip
+                                  label={`${result.word_count} words`}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                              {result.mood_level && (
+                                <Chip
+                                  label={`Mood: ${result.mood_level}/5`}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+            )}
+          </Paper>
+        )}
+
+        {/* Day Detail Modal */}
         {selectedDay && (
           <Paper sx={{ mt: 3, p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

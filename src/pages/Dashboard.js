@@ -178,17 +178,17 @@ const Dashboard = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  View Timeline
+                  Timeline & Search
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Browse your past moods, diary entries, and photos in calendar view.
+                  Browse your past entries in calendar view and search through your memories.
                 </Typography>
                 <Button 
                   variant="contained" 
                   fullWidth
                   onClick={() => navigate('/timeline')}
                 >
-                  Open Timeline
+                  View Timeline
                 </Button>
               </CardContent>
             </Card>
