@@ -1,4 +1,4 @@
-// src/pages/CapsulesPage.js
+// src/pages/CapsulesPage.js - Updated with Real API
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -66,29 +66,8 @@ const CapsulesPage = () => {
   const fetchCapsules = async () => {
     setLoading(true);
     try {
-      // Simulate API call since capsules endpoint might not be fully implemented
-      const mockCapsules = [
-        {
-          id: 1,
-          title: "Future Me Reminder",
-          message: "Remember to stay positive and keep journaling!",
-          open_date: dayjs().add(1, 'month').toISOString(),
-          is_opened: false,
-          is_private: true,
-          created_at: dayjs().subtract(1, 'day').toISOString()
-        },
-        {
-          id: 2,
-          title: "Birthday Wishes",
-          message: "Happy birthday! Hope this year brought you joy.",
-          open_date: dayjs().subtract(1, 'day').toISOString(),
-          is_opened: true,
-          is_private: true,
-          created_at: dayjs().subtract(2, 'months').toISOString(),
-          opened_at: dayjs().subtract(1, 'day').toISOString()
-        }
-      ];
-      setCapsules(mockCapsules);
+      const result = await ApiService.getCapsules();
+      setCapsules(result);
     } catch (error) {
       console.error('Failed to fetch capsules:', error);
       setError('Failed to load capsules');
@@ -112,17 +91,13 @@ const CapsulesPage = () => {
     setError('');
 
     try {
-      // Simulate capsule creation
-      const newCapsule = {
-        id: Date.now(),
+      const newCapsule = await ApiService.createCapsule({
         title: capsuleData.title.trim(),
         message: capsuleData.message.trim(),
         open_date: capsuleData.open_date.toISOString(),
-        is_opened: false,
         is_private: capsuleData.is_private,
-        recipient_email: capsuleData.recipient_email || null,
-        created_at: dayjs().toISOString()
-      };
+        recipient_email: capsuleData.recipient_email || null
+      });
 
       setCapsules(prev => [newCapsule, ...prev]);
       setSuccess('Memory capsule created successfully!');
@@ -132,7 +107,7 @@ const CapsulesPage = () => {
 
     } catch (error) {
       console.error('Failed to create capsule:', error);
-      setError('Failed to create capsule');
+      setError(error.response?.data?.detail || 'Failed to create capsule');
     } finally {
       setLoading(false);
     }
@@ -151,13 +126,9 @@ const CapsulesPage = () => {
       return;
     }
 
-    // Open the capsule
+    // Open the capsule via API
     try {
-      const updatedCapsule = {
-        ...capsule,
-        is_opened: true,
-        opened_at: dayjs().toISOString()
-      };
+      const updatedCapsule = await ApiService.openCapsule(capsule.id);
       
       setCapsules(prev => 
         prev.map(c => c.id === capsule.id ? updatedCapsule : c)
@@ -170,7 +141,7 @@ const CapsulesPage = () => {
 
     } catch (error) {
       console.error('Failed to open capsule:', error);
-      setError('Failed to open capsule');
+      setError(error.response?.data?.detail || 'Failed to open capsule');
     }
   };
 
@@ -256,7 +227,7 @@ const CapsulesPage = () => {
           )}
 
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
               {error}
             </Alert>
           )}

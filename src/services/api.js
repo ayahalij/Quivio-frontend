@@ -118,6 +118,27 @@ class ApiService {
     const response = await this.api.get(`/timeline/search?q=${encodeURIComponent(searchTerm)}`)
     return response.data
   }
+
+    // Capsules endpoints
+    async getCapsules() {
+    const response = await this.api.get('/capsules/');
+    return response.data;
+    }
+
+    async createCapsule(capsuleData) {
+    const response = await this.api.post('/capsules/', capsuleData);
+    return response.data;
+    }
+
+    async openCapsule(capsuleId) {
+    const response = await this.api.put(`/capsules/${capsuleId}/open`);
+    return response.data;
+    }
+
+    async getCapsule(capsuleId) {
+    const response = await this.api.get(`/capsules/${capsuleId}`);
+    return response.data;
+    }
 }
 
 const apiService = new ApiService()
