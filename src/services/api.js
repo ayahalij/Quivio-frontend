@@ -139,6 +139,27 @@ class ApiService {
     const response = await this.api.get(`/capsules/${capsuleId}`);
     return response.data;
     }
+
+    // Analytics endpoints
+    async getMoodTrends(days = 30) {
+    const response = await this.api.get(`/analytics/mood-trends?days=${days}`);
+    return response.data;
+    }
+
+    async getMoodDistribution(days = 30) {
+    const response = await this.api.get(`/analytics/mood-distribution?days=${days}`);
+    return response.data;
+    }
+
+    async getActivitySummary(days = 30) {
+    const response = await this.api.get(`/analytics/activity-summary?days=${days}`);
+    return response.data;
+    }
+
+    async getInsights() {
+    const response = await this.api.get('/analytics/insights');
+    return response.data;
+    }
 }
 
 const apiService = new ApiService()

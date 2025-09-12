@@ -1,4 +1,4 @@
-// src/pages/ProfilePage.js
+// src/pages/ProfilePage.js - Updated with Analytics
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -22,7 +22,9 @@ import {
   IconButton,
   AppBar,
   Toolbar,
-  Chip
+  Chip,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   Person,
@@ -31,13 +33,16 @@ import {
   Edit,
   Save,
   Cancel,
-  Logout
+  Logout,
+  Analytics
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import ApiService from '../services/api';
+import AnalyticsDashboard from '../components/profile/AnalyticsDashboard';
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
+  const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
@@ -144,7 +149,7 @@ const ProfilePage = () => {
       <AppBar position="static" elevation={1}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Profile & Settings
+            Profile & Analytics
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar sx={{ width: 32, height: 32 }}>
@@ -161,6 +166,18 @@ const ProfilePage = () => {
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 4 }}>
+        {/* Tab Navigation */}
+        <Paper sx={{ mb: 3 }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={(e, newValue) => setTabValue(newValue)}
+            centered
+          >
+            <Tab label="Profile & Settings" icon={<Person />} />
+            <Tab label="Analytics Dashboard" icon={<Analytics />} />
+          </Tabs>
+        </Paper>
+
         {success && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {success}
@@ -173,282 +190,290 @@ const ProfilePage = () => {
           </Alert>
         )}
 
-        <Grid container spacing={3}>
-          {/* Profile Section */}
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <Person color="primary" />
-                  <Typography variant="h6">Profile Information</Typography>
-                  {!editMode && (
-                    <IconButton onClick={() => setEditMode(true)}>
-                      <Edit />
-                    </IconButton>
-                  )}
-                </Box>
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Username"
-                      value={profileData.username}
-                      onChange={(e) => setProfileData({...profileData, username: e.target.value})}
-                      disabled={!editMode}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Email"
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                      disabled={!editMode}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Bio"
-                      multiline
-                      rows={3}
-                      value={profileData.bio}
-                      onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
-                      disabled={!editMode}
-                      placeholder="Tell us about yourself..."
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth disabled={!editMode}>
-                      <InputLabel>Language</InputLabel>
-                      <Select
-                        value={profileData.language}
-                        label="Language"
-                        onChange={(e) => setProfileData({...profileData, language: e.target.value})}
-                      >
-                        <MenuItem value="en">English</MenuItem>
-                        <MenuItem value="ar">Arabic</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth disabled={!editMode}>
-                      <InputLabel>Theme</InputLabel>
-                      <Select
-                        value={profileData.theme_mode}
-                        label="Theme"
-                        onChange={(e) => setProfileData({...profileData, theme_mode: e.target.value})}
-                      >
-                        <MenuItem value="light">Light Mode</MenuItem>
-                        <MenuItem value="dark">Dark Mode</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-
-                {editMode && (
-                  <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<Save />}
-                      onClick={handleProfileUpdate}
-                      disabled={loading}
-                    >
-                      Save Changes
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Cancel />}
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </Button>
+        {/* Profile Tab */}
+        {tabValue === 0 && (
+          <Grid container spacing={3}>
+            {/* Profile Section */}
+            <Grid item xs={12} md={8}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                    <Person color="primary" />
+                    <Typography variant="h6">Profile Information</Typography>
+                    {!editMode && (
+                      <IconButton onClick={() => setEditMode(true)}>
+                        <Edit />
+                      </IconButton>
+                    )}
                   </Box>
-                )}
 
-                <Divider sx={{ my: 3 }} />
-
-                {/* Password Change Section */}
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Security
-                  </Typography>
-                  {!showPasswordChange ? (
-                    <Button
-                      variant="outlined"
-                      onClick={() => setShowPasswordChange(true)}
-                    >
-                      Change Password
-                    </Button>
-                  ) : (
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          label="Current Password"
-                          type="password"
-                          value={passwordData.current_password}
-                          onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="New Password"
-                          type="password"
-                          value={passwordData.new_password}
-                          onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Confirm New Password"
-                          type="password"
-                          value={passwordData.confirm_new_password}
-                          onChange={(e) => setPasswordData({...passwordData, confirm_new_password: e.target.value})}
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                          <Button
-                            variant="contained"
-                            onClick={handlePasswordChange}
-                            disabled={loading}
-                          >
-                            Change Password
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            onClick={() => {
-                              setShowPasswordChange(false);
-                              setPasswordData({
-                                current_password: '',
-                                new_password: '',
-                                confirm_new_password: ''
-                              });
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Stats Section */}
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                  <BarChart color="primary" />
-                  <Typography variant="h6">Your Statistics</Typography>
-                </Box>
-
-                {stats ? (
                   <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="h4" color="primary">
-                          {stats.total_entries}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Total Entries
-                        </Typography>
-                      </Paper>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Username"
+                        value={profileData.username}
+                        onChange={(e) => setProfileData({...profileData, username: e.target.value})}
+                        disabled={!editMode}
+                      />
                     </Grid>
 
-                    <Grid item xs={6}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="h4" color="primary">
-                          {stats.current_streak}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Current Streak
-                        </Typography>
-                      </Paper>
-                    </Grid>
-
-                    <Grid item xs={6}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="h4" color="primary">
-                          {stats.total_photos}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Photos
-                        </Typography>
-                      </Paper>
-                    </Grid>
-
-                    <Grid item xs={6}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="h4" color="primary">
-                          {stats.total_challenges_completed}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Challenges
-                        </Typography>
-                      </Paper>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Email"
+                        type="email"
+                        value={profileData.email}
+                        onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                        disabled={!editMode}
+                      />
                     </Grid>
 
                     <Grid item xs={12}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Mood Distribution
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {Object.entries(stats.mood_distribution || {}).map(([mood, count]) => (
-                          <Chip
-                            key={mood}
-                            label={`Level ${mood}: ${count}`}
-                            size="small"
-                            variant="outlined"
-                          />
-                        ))}
-                      </Box>
+                      <TextField
+                        fullWidth
+                        label="Bio"
+                        multiline
+                        rows={3}
+                        value={profileData.bio}
+                        onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                        disabled={!editMode}
+                        placeholder="Tell us about yourself..."
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth disabled={!editMode}>
+                        <InputLabel>Language</InputLabel>
+                        <Select
+                          value={profileData.language}
+                          label="Language"
+                          onChange={(e) => setProfileData({...profileData, language: e.target.value})}
+                        >
+                          <MenuItem value="en">English</MenuItem>
+                          <MenuItem value="ar">Arabic</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth disabled={!editMode}>
+                        <InputLabel>Theme</InputLabel>
+                        <Select
+                          value={profileData.theme_mode}
+                          label="Theme"
+                          onChange={(e) => setProfileData({...profileData, theme_mode: e.target.value})}
+                        >
+                          <MenuItem value="light">Light Mode</MenuItem>
+                          <MenuItem value="dark">Dark Mode</MenuItem>
+                        </Select>
+                      </FormControl>
                     </Grid>
                   </Grid>
-                ) : (
-                  <Typography color="text.secondary">
-                    Loading statistics...
+
+                  {editMode && (
+                    <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={<Save />}
+                        onClick={handleProfileUpdate}
+                        disabled={loading}
+                      >
+                        Save Changes
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<Cancel />}
+                        onClick={handleCancel}
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  )}
+
+                  <Divider sx={{ my: 3 }} />
+
+                  {/* Password Change Section */}
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Security
+                    </Typography>
+                    {!showPasswordChange ? (
+                      <Button
+                        variant="outlined"
+                        onClick={() => setShowPasswordChange(true)}
+                      >
+                        Change Password
+                      </Button>
+                    ) : (
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            label="Current Password"
+                            type="password"
+                            value={passwordData.current_password}
+                            onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="New Password"
+                            type="password"
+                            value={passwordData.new_password}
+                            onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="Confirm New Password"
+                            type="password"
+                            value={passwordData.confirm_new_password}
+                            onChange={(e) => setPasswordData({...passwordData, confirm_new_password: e.target.value})}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Button
+                              variant="contained"
+                              onClick={handlePasswordChange}
+                              disabled={loading}
+                            >
+                              Change Password
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              onClick={() => {
+                                setShowPasswordChange(false);
+                                setPasswordData({
+                                  current_password: '',
+                                  new_password: '',
+                                  confirm_new_password: ''
+                                });
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Stats Section */}
+            <Grid item xs={12} md={4}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                    <BarChart color="primary" />
+                    <Typography variant="h6">Your Statistics</Typography>
+                  </Box>
+
+                  {stats ? (
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Paper sx={{ p: 2, textAlign: 'center' }}>
+                          <Typography variant="h4" color="primary">
+                            {stats.total_entries}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Total Entries
+                          </Typography>
+                        </Paper>
+                      </Grid>
+
+                      <Grid item xs={6}>
+                        <Paper sx={{ p: 2, textAlign: 'center' }}>
+                          <Typography variant="h4" color="primary">
+                            {stats.current_streak}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Current Streak
+                          </Typography>
+                        </Paper>
+                      </Grid>
+
+                      <Grid item xs={6}>
+                        <Paper sx={{ p: 2, textAlign: 'center' }}>
+                          <Typography variant="h4" color="primary">
+                            {stats.total_photos}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Photos
+                          </Typography>
+                        </Paper>
+                      </Grid>
+
+                      <Grid item xs={6}>
+                        <Paper sx={{ p: 2, textAlign: 'center' }}>
+                          <Typography variant="h4" color="primary">
+                            {stats.total_challenges_completed}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Challenges
+                          </Typography>
+                        </Paper>
+                      </Grid>
+
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Mood Distribution
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {Object.entries(stats.mood_distribution || {}).map(([mood, count]) => (
+                            <Chip
+                              key={mood}
+                              label={`Level ${mood}: ${count}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          ))}
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  ) : (
+                    <Typography color="text.secondary">
+                      Loading statistics...
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Account Actions */}
+              <Card sx={{ mt: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Account Actions
                   </Typography>
-                )}
-              </CardContent>
-            </Card>
+                  
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Member since: {new Date(user?.created_at).toLocaleDateString()}
+                  </Typography>
 
-            {/* Account Actions */}
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Account Actions
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Member since: {new Date(user?.created_at).toLocaleDateString()}
-                </Typography>
-
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<Logout />}
-                  onClick={logout}
-                  fullWidth
-                >
-                  Sign Out
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<Logout />}
+                    onClick={logout}
+                    fullWidth
+                  >
+                    Sign Out
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
-        </Grid>
+        )}
+
+        {/* Analytics Tab */}
+        {tabValue === 1 && (
+          <AnalyticsDashboard />
+        )}
       </Container>
     </Box>
   );
