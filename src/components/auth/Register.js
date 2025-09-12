@@ -1,5 +1,5 @@
-// src/components/auth/Register.js
-import React, { useState } from 'react'
+// src/components/auth/Register.js (Simplified debugging version)
+import React, { useState } from 'react';
 import { 
   Container, 
   Paper, 
@@ -11,9 +11,9 @@ import {
   Link,
   Checkbox,
   FormControlLabel 
-} from '@mui/material'
-import { useAuth } from '../../contexts/AuthContext'
-import { useNavigate, Link as RouterLink } from 'react-router-dom'
+} from '@mui/material';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -22,63 +22,88 @@ const Register = () => {
     password: '',
     confirm_password: '',
     bio: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  });
+  const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [localError, setLocalError] = useState(null);
   
-  const { register, error } = useAuth()
-  const navigate = useNavigate()
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
-    })
-  }
+    });
+    setLocalError(null);
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!agreedToTerms) {
-      alert('Please agree to the terms and conditions')
-      return
+    e.preventDefault();
+    console.log('=== FORM SUBMIT TRIGGERED ===');
+    console.log('Form data:', formData);
+    console.log('Terms agreed:', agreedToTerms);
+
+    // Simple validation
+    if (!formData.username || !formData.email || !formData.password || !formData.confirm_password) {
+      setLocalError('Please fill in all required fields');
+      return;
     }
 
     if (formData.password !== formData.confirm_password) {
-      alert('Passwords do not match')
-      return
+      setLocalError('Passwords do not match');
+      return;
     }
 
-    setLoading(true)
+    if (!agreedToTerms) {
+      setLocalError('Please agree to the terms');
+      return;
+    }
+
+    setLoading(true);
+    console.log('Starting registration...');
 
     try {
-      await register(formData)
-      navigate('/dashboard')
+      const result = await register(formData);
+      console.log('Registration successful:', result);
+      navigate('/dashboard');
     } catch (error) {
-      console.error('Registration error:', error)
+      console.error('Registration failed:', error);
+      setLocalError('Registration failed: ' + (error.message || 'Unknown error'));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  // Test button click
+  const handleButtonClick = (e) => {
+    console.log('=== BUTTON CLICKED ===');
+    console.log('Event:', e);
+    console.log('Loading state:', loading);
+    console.log('Form valid check:', {
+      username: !!formData.username,
+      email: !!formData.email,
+      password: !!formData.password,
+      confirm_password: !!formData.confirm_password,
+      terms: agreedToTerms
+    });
+  };
 
   return (
     <Container maxWidth="sm">
-      <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Typography component="h1" variant="h4" align="center" gutterBottom>
+      <Box sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ padding: 4 }}>
+          <Typography variant="h4" align="center" gutterBottom>
             Join Quivio
           </Typography>
-          <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 3 }}>
-            Start your personal journaling journey today
-          </Typography>
 
-          {error && (
+          {localError && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {Array.isArray(error) ? error.map(e => e.msg).join(', ') : error}
+              {localError}
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
               label="Username"
@@ -87,7 +112,6 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
-              helperText="Must be at least 3 characters, letters, numbers, and underscores only"
             />
 
             <TextField
@@ -110,7 +134,6 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
-              helperText="Must contain uppercase, lowercase, and numbers"
             />
 
             <TextField
@@ -122,18 +145,6 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
-            />
-
-            <TextField
-              fullWidth
-              label="Bio (Optional)"
-              name="bio"
-              multiline
-              rows={2}
-              value={formData.bio}
-              onChange={handleChange}
-              margin="normal"
-              placeholder="Tell us a bit about yourself..."
             />
 
             <FormControlLabel
@@ -153,21 +164,22 @@ const Register = () => {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={loading || !agreedToTerms}
+              disabled={loading}
+              onClick={handleButtonClick}
             >
               {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
-          </form>
+          </Box>
 
           <Box textAlign="center">
-            <Link component={RouterLink} to="/login" variant="body2">
+            <Link component={RouterLink} to="/login">
               Already have an account? Sign In
             </Link>
           </Box>
         </Paper>
       </Box>
     </Container>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;
