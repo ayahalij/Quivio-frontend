@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 import LandingPage from './pages/LandingPage'
 import Timeline from './pages/TimelinePage'
 import ProfilePage from './pages/ProfilePage'
+import CapsulesPage from './pages/CapsulesPage'
 
 const theme = createTheme({
   palette: {
@@ -93,6 +94,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/capsules" 
+              element={
+                <ProtectedRoute>
+                  <CapsulesPage />
                 </ProtectedRoute>
               } 
             />

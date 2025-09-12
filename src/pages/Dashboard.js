@@ -213,6 +213,26 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Memory Capsules
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Create time-locked messages and memories for your future self.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  onClick={() => navigate('/capsules')}
+                >
+                  View Capsules
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
 
         {/* Recent Activity */}
