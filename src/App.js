@@ -7,6 +7,7 @@ import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import Dashboard from './pages/Dashboard'
 import LandingPage from './pages/LandingPage'
+import Timeline from './pages/TimelinePage'
 
 const theme = createTheme({
   palette: {
@@ -79,6 +80,15 @@ function App() {
             
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
+
+            <Route 
+              path="/timeline" 
+              element={
+                <ProtectedRoute>
+                  <Timeline />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </Router>
       </AuthProvider>

@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import MoodTracker from '../components/daily/MoodTracker';
 import DiaryEntry from '../components/daily/DiaryEntry';
 import DailyChallenge from '../components/challenges/DailyChallenge';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [diaryDialogOpen, setDiaryDialogOpen] = useState(false);
   const [challengeDialogOpen, setChallengeDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
@@ -139,6 +141,26 @@ const Dashboard = () => {
                   onClick={() => setChallengeDialogOpen(true)}
                 >
                   View Challenge
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  View Timeline
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Browse your past moods, diary entries, and photos in calendar view.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  onClick={() => navigate('/timeline')}
+                >
+                  Open Timeline
                 </Button>
               </CardContent>
             </Card>
