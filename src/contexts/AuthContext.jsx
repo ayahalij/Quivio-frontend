@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
         try {
           // Verify token is still valid by getting user info
           const response = await ApiService.getCurrentUser();
+          console.log('User data from API:', response); // Debug line
           setUser(response);
         } catch (error) {
           // Token is invalid, clear storage
@@ -77,8 +78,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // CORRECT PLACEMENT: value object should be here, inside the component
   const value = {
     user,
+    setUser, // Now included properly
     login,
     register,
     logout,

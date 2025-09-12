@@ -1,4 +1,4 @@
-// src/services/api.js - Complete API Service
+// src/services/api.jsx - Complete API Service with Avatar Upload
 import axios from 'axios'
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000'
@@ -67,6 +67,19 @@ class ApiService {
 
   async getCurrentUser() {
     const response = await this.api.get('/auth/me')
+    return response.data
+  }
+
+  // USER AVATAR UPLOAD - ADDED THIS METHOD
+  async uploadAvatar(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    const response = await this.api.post('/users/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return response.data
   }
 

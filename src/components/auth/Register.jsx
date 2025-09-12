@@ -1,4 +1,4 @@
-// src/components/auth/Register.jsx - With Avatar Upload
+// src/components/auth/Register.jsx - Fixed Avatar Upload
 import React, { useState } from 'react';
 import { 
   Container, 
@@ -14,11 +14,13 @@ import {
   Avatar,
   IconButton,
   Card,
-  CardContent
+  CardContent,
+  LinearProgress
 } from '@mui/material';
 import { PhotoCamera, AccountCircle } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import ApiService from '../../services/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -36,7 +38,7 @@ const Register = () => {
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   
-  const { register } = useAuth();
+  const { register, setUser } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -65,8 +67,12 @@ const Register = () => {
       setSelectedAvatar(file);
       
       // Create preview URL
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
       const url = URL.createObjectURL(file);
       setAvatarPreview(url);
+      setLocalError(null);
     }
   };
 
@@ -111,33 +117,37 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Register user first
-      const result = await register(formData);
+      console.log('Step 1: Registering user...');
       
-      // Upload avatar if selected
+      // Step 1: Register user first
+      const result = await register(formData);
+      console.log('Step 2: User registered successfully:', result);
+      
+      // Step 2: Upload avatar if selected (AFTER registration)
       if (selectedAvatar) {
-        const avatarFormData = new FormData();
-        avatarFormData.append('file', selectedAvatar);
+        console.log('Step 3: Uploading avatar...');
         
         try {
-          // You'll need to add this API call to your ApiService
-          await fetch('/users/avatar', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-            },
-            body: avatarFormData
-          });
+          const avatarResult = await ApiService.uploadAvatar(selectedAvatar);
+          console.log('Step 4: Avatar uploaded successfully:', avatarResult);
+          
+          // Step 3: Refresh user data to get updated avatar
+          const updatedUser = await ApiService.getCurrentUser();
+          console.log('Step 5: Updated user data:', updatedUser);
+          setUser(updatedUser);
+          
         } catch (avatarError) {
-          console.error('Avatar upload failed:', avatarError);
+          console.warn('Avatar upload failed, but registration succeeded:', avatarError);
           // Don't fail registration if avatar upload fails
+          setLocalError('Account created successfully, but avatar upload failed. You can upload an avatar later in your profile.');
         }
       }
       
+      console.log('Step 6: Navigating to dashboard...');
       navigate('/dashboard');
       
     } catch (error) {
-      console.log('Registration failed:', error);
+      console.error('Registration failed:', error);
       
       let errorMessage = 'Registration failed';
       
@@ -162,6 +172,15 @@ const Register = () => {
     }
   };
 
+  // Cleanup preview URL on unmount
+  React.useEffect(() => {
+    return () => {
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 4 }}>
@@ -174,6 +193,15 @@ const Register = () => {
             <Alert severity="error" sx={{ mb: 2 }}>
               {localError}
             </Alert>
+          )}
+
+          {loading && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" gutterBottom>
+                Creating your account...
+              </Typography>
+              <LinearProgress />
+            </Box>
           )}
 
           <Box component="form" onSubmit={handleSubmit}>
@@ -204,11 +232,13 @@ const Register = () => {
                     id="avatar-upload"
                     type="file"
                     onChange={handleAvatarSelect}
+                    disabled={loading}
                   />
                   <label htmlFor="avatar-upload">
                     <IconButton
                       color="primary"
                       component="span"
+                      disabled={loading}
                       sx={{
                         position: 'absolute',
                         bottom: -5,
@@ -227,6 +257,12 @@ const Register = () => {
                 <Typography variant="caption" display="block" color="text.secondary">
                   Max 5MB • JPG, PNG, GIF
                 </Typography>
+                
+                {selectedAvatar && (
+                  <Typography variant="caption" display="block" color="primary" sx={{ mt: 1 }}>
+                    Selected: {selectedAvatar.name}
+                  </Typography>
+                )}
               </CardContent>
             </Card>
 
@@ -238,6 +274,7 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
+              disabled={loading}
               helperText="At least 3 characters"
             />
 
@@ -250,6 +287,7 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
+              disabled={loading}
             />
             
             <TextField
@@ -261,6 +299,7 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
+              disabled={loading}
               helperText="At least 8 characters"
             />
 
@@ -273,6 +312,7 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
+              disabled={loading}
             />
 
             <TextField
@@ -284,6 +324,7 @@ const Register = () => {
               margin="normal"
               multiline
               rows={2}
+              disabled={loading}
             />
 
             <FormControlLabel
@@ -292,6 +333,7 @@ const Register = () => {
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
                   color="primary"
+                  disabled={loading}
                 />
               }
               label="I agree to the Terms and Conditions"

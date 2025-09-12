@@ -1,5 +1,5 @@
-// src/pages/Dashboard.js - Updated to integrate Map with Timeline
-import React, { useState } from 'react';
+// src/pages/Dashboard.jsx - Complete with Avatar Support and Debug Logs
+import React, { useState, useEffect } from 'react';
 import { 
   Container, 
   Box, 
@@ -28,6 +28,16 @@ const Dashboard = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('=== DASHBOARD DEBUG ===');
+    console.log('Full user object:', user);
+    console.log('User avatar_url:', user?.avatar_url);
+    console.log('User username:', user?.username);
+    console.log('Avatar URL exists:', !!user?.avatar_url);
+    console.log('Avatar URL value:', JSON.stringify(user?.avatar_url));
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -62,8 +72,22 @@ const Dashboard = () => {
             Quivio Dashboard
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ width: 32, height: 32 }}>
-              {user?.username?.charAt(0).toUpperCase()}
+            <Avatar 
+              src={user?.avatar_url} 
+              sx={{ 
+                width: 32, 
+                height: 32,
+                bgcolor: user?.avatar_url ? 'transparent' : 'primary.main'
+              }}
+              onError={(e) => {
+                console.log('Avatar failed to load:', user?.avatar_url);
+                console.log('Error event:', e);
+              }}
+              onLoad={() => {
+                console.log('Avatar loaded successfully:', user?.avatar_url);
+              }}
+            >
+              {(!user?.avatar_url) && user?.username?.charAt(0).toUpperCase()}
             </Avatar>
             <Typography variant="body2">
               {user?.username}
@@ -94,7 +118,7 @@ const Dashboard = () => {
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {/* Row 1 - Core Daily Features */}
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Daily Mood
@@ -114,7 +138,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Write Entry
@@ -134,7 +158,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Daily Challenge
@@ -155,7 +179,7 @@ const Dashboard = () => {
 
           {/* Row 2 - Additional Features */}
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Add Photo Memory
@@ -175,7 +199,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Calendar View
@@ -195,7 +219,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Search Memories
@@ -216,7 +240,7 @@ const Dashboard = () => {
 
           {/* Row 3 - Additional Features */}
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Photo Map
@@ -236,7 +260,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Memory Capsules
@@ -256,7 +280,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Profile & Settings

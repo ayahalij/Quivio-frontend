@@ -1,4 +1,4 @@
-// src/pages/ProfilePage.js - Updated with Analytics
+// src/pages/ProfilePage.jsx - Complete with Avatar Upload
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -24,7 +24,8 @@ import {
   Toolbar,
   Chip,
   Tabs,
-  Tab
+  Tab,
+  LinearProgress
 } from '@mui/material';
 import {
   Person,
@@ -34,20 +35,27 @@ import {
   Save,
   Cancel,
   Logout,
-  Analytics
+  Analytics,
+  PhotoCamera,
+  AccountCircle
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import ApiService from '../services/api';
 import AnalyticsDashboard from '../components/profile/AnalyticsDashboard';
 
 const ProfilePage = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, setUser } = useAuth(); // Added setUser to update context
   const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
+  
+  // Avatar upload state
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar_url || null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   
   // Profile form data
   const [profileData, setProfileData] = useState({
@@ -70,12 +78,82 @@ const ProfilePage = () => {
     fetchUserStats();
   }, []);
 
+  // Update profile data when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        username: user.username || '',
+        email: user.email || '',
+        bio: user.bio || '',
+        language: user.language || 'en',
+        theme_mode: user.theme_mode || 'light'
+      });
+      setAvatarPreview(user.avatar_url || null);
+    }
+  }, [user]);
+
   const fetchUserStats = async () => {
     try {
       const result = await ApiService.getUserStats();
       setStats(result);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  const handleAvatarSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Avatar file size must be less than 5MB');
+        return;
+      }
+
+      setSelectedAvatar(file);
+      
+      // Create preview URL
+      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+      const url = URL.createObjectURL(file);
+      setAvatarPreview(url);
+      setError('');
+    }
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!selectedAvatar) return;
+
+    setAvatarUploading(true);
+    setError('');
+
+    try {
+      const result = await ApiService.uploadAvatar(selectedAvatar);
+      
+      // Refresh user data to get updated avatar URL
+      const updatedUser = await ApiService.getCurrentUser();
+      setUser(updatedUser); // Update user in context
+      
+      setSuccess('Avatar updated successfully!');
+      setSelectedAvatar(null);
+      setTimeout(() => setSuccess(''), 3000);
+      
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+      if (error.response?.data?.detail) {
+        setError(error.response.data.detail);
+      } else {
+        setError('Failed to upload avatar. Please try again.');
+      }
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -86,10 +164,13 @@ const ProfilePage = () => {
 
     try {
       const result = await ApiService.updateProfile(profileData);
+      
+      // Refresh user data
+      const updatedUser = await ApiService.getCurrentUser();
+      setUser(updatedUser);
+      
       setSuccess('Profile updated successfully!');
       setEditMode(false);
-      
-      // Update local user data if needed
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Profile update failed:', error);
@@ -141,6 +222,10 @@ const ProfilePage = () => {
     });
     setEditMode(false);
     setError('');
+    
+    // Reset avatar changes
+    setSelectedAvatar(null);
+    setAvatarPreview(user?.avatar_url || null);
   };
 
   return (
@@ -152,8 +237,11 @@ const ProfilePage = () => {
             Profile & Analytics
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ width: 32, height: 32 }}>
-              {user?.username?.charAt(0).toUpperCase()}
+            <Avatar 
+              src={user?.avatar_url} 
+              sx={{ width: 32, height: 32 }}
+            >
+              {!user?.avatar_url && user?.username?.charAt(0).toUpperCase()}
             </Avatar>
             <Typography variant="body2">
               {user?.username}
@@ -206,6 +294,99 @@ const ProfilePage = () => {
                       </IconButton>
                     )}
                   </Box>
+
+                  {/* Avatar Upload Section */}
+                  <Card variant="outlined" sx={{ mb: 3, p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Profile Photo
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <Box sx={{ position: 'relative' }}>
+                        <Avatar
+                          src={avatarPreview}
+                          sx={{ 
+                            width: 100, 
+                            height: 100,
+                            bgcolor: 'primary.main'
+                          }}
+                        >
+                          {!avatarPreview && (
+                            <AccountCircle sx={{ fontSize: 60 }} />
+                          )}
+                        </Avatar>
+                        
+                        <input
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          id="avatar-upload"
+                          type="file"
+                          onChange={handleAvatarSelect}
+                          disabled={avatarUploading}
+                        />
+                        <label htmlFor="avatar-upload">
+                          <IconButton
+                            color="primary"
+                            component="span"
+                            disabled={avatarUploading}
+                            sx={{
+                              position: 'absolute',
+                              bottom: -5,
+                              right: -5,
+                              backgroundColor: 'white',
+                              border: '2px solid',
+                              borderColor: 'primary.main',
+                              '&:hover': { backgroundColor: 'grey.100' }
+                            }}
+                          >
+                            <PhotoCamera fontSize="small" />
+                          </IconButton>
+                        </label>
+                      </Box>
+                      
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                          Upload a new avatar. Max 5MB • JPG, PNG, GIF
+                        </Typography>
+                        
+                        {selectedAvatar && (
+                          <>
+                            <Typography variant="caption" display="block" color="primary">
+                              New avatar selected: {selectedAvatar.name}
+                            </Typography>
+                            <Box sx={{ mt: 1 }}>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                onClick={handleAvatarUpload}
+                                disabled={avatarUploading}
+                                sx={{ mr: 1 }}
+                              >
+                                {avatarUploading ? 'Uploading...' : 'Upload Avatar'}
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => {
+                                  setSelectedAvatar(null);
+                                  setAvatarPreview(user?.avatar_url || null);
+                                }}
+                                disabled={avatarUploading}
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
+                          </>
+                        )}
+                        
+                        {avatarUploading && (
+                          <Box sx={{ mt: 1 }}>
+                            <LinearProgress />
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  </Card>
 
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>

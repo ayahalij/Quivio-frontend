@@ -26,8 +26,11 @@ const SearchPage = () => {
             Search Your Memories
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ width: 32, height: 32 }}>
-              {user?.username?.charAt(0).toUpperCase()}
+            <Avatar 
+              src={user?.avatar_url} 
+              sx={{ width: 32, height: 32 }}
+            >
+              {!user?.avatar_url && user?.username?.charAt(0).toUpperCase()}
             </Avatar>
             <Typography variant="body2">
               {user?.username}
