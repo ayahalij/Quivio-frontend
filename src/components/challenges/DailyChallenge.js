@@ -1,4 +1,4 @@
-// src/components/challenges/DailyChallenge.js
+// src/components/challenges/DailyChallenge.js - Complete Challenge Component
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -21,6 +21,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
   const [challengeData, setChallengeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -34,9 +35,11 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
 
     try {
       const result = await ApiService.getDailyChallenge();
+      console.log('Challenge data received:', result);
       setChallengeData(result);
     } catch (error) {
       console.error('Failed to fetch daily challenge:', error);
+      console.error('Error details:', error.response?.data);
       setError('Failed to load today\'s challenge. Make sure you\'ve set your mood first!');
     } finally {
       setLoading(false);
@@ -44,17 +47,47 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
   };
 
   const handleCompleteChallenge = async () => {
+    if (!challengeData?.challenge?.id) {
+      setError('Challenge ID not found');
+      return;
+    }
+
+    setCompleting(true);
+    setError(null);
+
     try {
-      await ApiService.api.post(`/challenges/complete/${challengeData.challenge.id}`, {
+      console.log('Completing challenge ID:', challengeData.challenge.id);
+      
+      const result = await ApiService.completeChallenge(challengeData.challenge.id, {
         is_completed: true,
         photo_url: null
       });
       
+      console.log('Challenge completion result:', result);
+      
+      // Update the local state to show completion
+      setChallengeData(prev => ({
+        ...prev,
+        user_challenge: {
+          ...prev.user_challenge,
+          is_completed: true,
+          completed_at: new Date().toISOString()
+        }
+      }));
+      
       onSuccess && onSuccess();
-      onClose();
+      
     } catch (error) {
       console.error('Failed to complete challenge:', error);
-      setError('Failed to mark challenge as complete');
+      console.error('Error response:', error.response?.data);
+      
+      let errorMessage = 'Failed to mark challenge as complete';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      }
+      setError(errorMessage);
+    } finally {
+      setCompleting(false);
     }
   };
 
@@ -126,13 +159,16 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
       
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
-        {challengeData && challengeData.can_complete && !challengeData.user_challenge?.is_completed && (
+        {challengeData && 
+         challengeData.can_complete && 
+         !challengeData.user_challenge?.is_completed && (
           <Button 
             onClick={handleCompleteChallenge}
             variant="contained"
             startIcon={<CheckCircle />}
+            disabled={completing}
           >
-            Mark as Complete
+            {completing ? 'Completing...' : 'Mark as Complete'}
           </Button>
         )}
       </DialogActions>

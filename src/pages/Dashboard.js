@@ -1,4 +1,4 @@
-// src/pages/Dashboard.js (Complete updated version)
+// src/pages/Dashboard.js - Complete Dashboard
 import React, { useState } from 'react';
 import { 
   Container, 
@@ -16,11 +16,13 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import MoodTracker from '../components/daily/MoodTracker';
 import DiaryEntry from '../components/daily/DiaryEntry';
+import DailyChallenge from '../components/challenges/DailyChallenge';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const [moodDialogOpen, setMoodDialogOpen] = useState(false);
   const [diaryDialogOpen, setDiaryDialogOpen] = useState(false);
+  const [challengeDialogOpen, setChallengeDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleLogout = () => {
@@ -34,6 +36,11 @@ const Dashboard = () => {
 
   const handleDiarySuccess = (result) => {
     setSuccessMessage(`Diary entry saved! ${result.word_count} words written.`);
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const handleChallengeSuccess = () => {
+    setSuccessMessage('Challenge completed! Well done!');
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
@@ -126,7 +133,11 @@ const Dashboard = () => {
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Complete today's photography challenge based on your mood.
                 </Typography>
-                <Button variant="contained" fullWidth>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  onClick={() => setChallengeDialogOpen(true)}
+                >
                   View Challenge
                 </Button>
               </CardContent>
@@ -160,6 +171,12 @@ const Dashboard = () => {
         open={diaryDialogOpen}
         onClose={() => setDiaryDialogOpen(false)}
         onSuccess={handleDiarySuccess}
+      />
+
+      <DailyChallenge
+        open={challengeDialogOpen}
+        onClose={() => setChallengeDialogOpen(false)}
+        onSuccess={handleChallengeSuccess}
       />
     </Box>
   );
