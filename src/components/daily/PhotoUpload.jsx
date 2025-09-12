@@ -1,4 +1,4 @@
-// src/components/daily/PhotoUpload.js
+// src/components/daily/PhotoUpload.jsx - Fixed to actually upload
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -13,9 +13,12 @@ import {
   LinearProgress,
   Card,
   CardContent,
-  IconButton
+  IconButton,
+  FormControlLabel,
+  Checkbox,
+  CircularProgress
 } from '@mui/material';
-import { CloudUpload, Close, PhotoCamera } from '@mui/icons-material';
+import { CloudUpload, Close, PhotoCamera, LocationOn } from '@mui/icons-material';
 import ApiService from '../../services/api';
 
 const PhotoUpload = ({ open, onClose, onSuccess }) => {
@@ -24,6 +27,9 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
   const [title, setTitle] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [includeLocation, setIncludeLocation] = useState(false);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -49,6 +55,37 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  const getLocation = async () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser');
+      return;
+    }
+
+    setGettingLocation(true);
+    
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        });
+      });
+
+      setLocation({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      });
+      
+      setIncludeLocation(true);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setError('Could not get your location. Please check permissions.');
+    } finally {
+      setGettingLocation(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
       setError('Please select a photo first');
@@ -64,30 +101,40 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
     setError(null);
 
     try {
-      // For now, we'll simulate upload since Cloudinary isn't fully configured
-      // In a real implementation, this would upload to your backend
-      console.log('Uploading photo:', {
-        file: selectedFile,
-        title: title.trim()
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('title', title.trim());
+      
+      // Add location if available and user wants to include it
+      if (includeLocation && location) {
+        formData.append('location_lat', location.lat.toString());
+        formData.append('location_lng', location.lng.toString());
+      }
+
+      // Call the actual backend API
+      const response = await ApiService.api.post('/photos/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Simulate successful upload
-      const result = {
-        id: Date.now(),
-        title: title.trim(),
-        image_url: previewUrl,
-        created_at: new Date().toISOString()
-      };
+      const result = response.data;
+      console.log('Photo uploaded successfully:', result);
 
       onSuccess && onSuccess(result);
       handleClose();
 
     } catch (error) {
       console.error('Photo upload failed:', error);
-      setError('Failed to upload photo. Please try again.');
+      
+      if (error.response?.data?.detail) {
+        setError(error.response.data.detail);
+      } else if (error.response?.status === 413) {
+        setError('File is too large. Please select a smaller image.');
+      } else {
+        setError('Failed to upload photo. Please try again.');
+      }
     } finally {
       setUploading(false);
     }
@@ -99,6 +146,9 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
     setTitle('');
     setError(null);
     setUploading(false);
+    setLocation(null);
+    setIncludeLocation(false);
+    setGettingLocation(false);
     
     // Clean up preview URL
     if (previewUrl) {
@@ -225,10 +275,53 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
           disabled={uploading}
           inputProps={{ maxLength: 255 }}
           helperText={`${title.length}/255 characters`}
+          sx={{ mb: 2 }}
         />
 
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          💡 Tip: Your photo will be saved to today's memories and may be visible on the timeline and map views.
+        {/* Location Options */}
+        <Card variant="outlined" sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle2" gutterBottom>
+              Location Options
+            </Typography>
+            
+            {!location ? (
+              <Box>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Add location data to see your photos on the map view
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={gettingLocation ? <CircularProgress size={16} /> : <LocationOn />}
+                  onClick={getLocation}
+                  disabled={gettingLocation || uploading}
+                  size="small"
+                >
+                  {gettingLocation ? 'Getting Location...' : 'Get Current Location'}
+                </Button>
+              </Box>
+            ) : (
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={includeLocation}
+                      onChange={(e) => setIncludeLocation(e.target.checked)}
+                      disabled={uploading}
+                    />
+                  }
+                  label="Include location with this photo"
+                />
+                <Typography variant="body2" color="text.secondary">
+                  Location: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+
+        <Typography variant="body2" color="text.secondary">
+          Your photo will be saved to today's memories and may be visible on the timeline and map views.
         </Typography>
       </DialogContent>
       

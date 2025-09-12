@@ -825,22 +825,98 @@ const TimelinePage = () => {
             {selectedDay.data.photos && selectedDay.data.photos.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle1" gutterBottom>Photos</Typography>
-                <Grid container spacing={1}>
+                <Grid container spacing={2}>
                   {selectedDay.data.photos.map((photo, index) => (
                     <Grid item xs={12} sm={6} md={4} key={index}>
                       <Card>
-                        <CardContent>
-                          <Typography variant="body2">{photo.title}</Typography>
+                        <Box sx={{ position: 'relative' }}>
+                          <img
+                            src={photo.url}
+                            alt={photo.title}
+                            style={{
+                              width: '100%',
+                              height: 120,
+                              objectFit: 'cover',
+                              borderRadius: '4px 4px 0 0'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
                           {photo.has_location && (
-                            <Typography variant="caption" color="text.secondary">
-                              Location saved
-                            </Typography>
+                            <Chip
+                              icon={<LocationOn />}
+                              label="Located"
+                              size="small"
+                              sx={{
+                                position: 'absolute',
+                                top: 4,
+                                right: 4,
+                                backgroundColor: 'rgba(255,255,255,0.9)'
+                              }}
+                            />
                           )}
+                        </Box>
+                        <CardContent sx={{ p: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            {photo.title}
+                          </Typography>
                         </CardContent>
                       </Card>
                     </Grid>
                   ))}
                 </Grid>
+              </Box>
+            )}
+
+            {selectedDay.data.capsules && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>Memory Capsules</Typography>
+                
+                {selectedDay.data.capsules.created && selectedDay.data.capsules.created.length > 0 && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="body2" color="primary" gutterBottom>
+                      📦 Capsules Created
+                    </Typography>
+                    {selectedDay.data.capsules.created.map((capsule, index) => (
+                      <Card key={index} sx={{ mb: 1, backgroundColor: '#e3f2fd' }}>
+                        <CardContent sx={{ p: 2 }}>
+                          <Typography variant="subtitle2">{capsule.title}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Opens: {dayjs(capsule.open_date).format('MMM D, YYYY')}
+                          </Typography>
+                          <Chip
+                            label={capsule.is_opened ? 'Opened' : 'Locked'}
+                            size="small"
+                            color={capsule.is_opened ? 'success' : 'default'}
+                            sx={{ mt: 1 }}
+                          />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Box>
+                )}
+                
+                {selectedDay.data.capsules.opened && selectedDay.data.capsules.opened.length > 0 && (
+                  <Box>
+                    <Typography variant="body2" color="success.main" gutterBottom>
+                      🎉 Capsules Opened
+                    </Typography>
+                    {selectedDay.data.capsules.opened.map((capsule, index) => (
+                      <Card key={index} sx={{ mb: 1, backgroundColor: '#e8f5e8' }}>
+                        <CardContent sx={{ p: 2 }}>
+                          <Typography variant="subtitle2">{capsule.title}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Created: {dayjs(capsule.created_date).format('MMM D, YYYY')}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 1 }}>
+                            {capsule.message}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Box>
+                )}
               </Box>
             )}
 

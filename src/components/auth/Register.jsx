@@ -1,4 +1,4 @@
-// src/components/auth/Register.jsx - Debug version
+// src/components/auth/Register.jsx - With Avatar Upload
 import React, { useState } from 'react';
 import { 
   Container, 
@@ -10,8 +10,13 @@ import {
   Alert,
   Link,
   Checkbox,
-  FormControlLabel 
+  FormControlLabel,
+  Avatar,
+  IconButton,
+  Card,
+  CardContent
 } from '@mui/material';
+import { PhotoCamera, AccountCircle } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 
@@ -26,7 +31,10 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [localError, setLocalError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState('');
+  
+  // Avatar state
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -37,6 +45,29 @@ const Register = () => {
       [e.target.name]: e.target.value
     });
     setLocalError(null);
+  };
+
+  const handleAvatarSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setLocalError('Please select an image file for your avatar');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setLocalError('Avatar file size must be less than 5MB');
+        return;
+      }
+
+      setSelectedAvatar(file);
+      
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setAvatarPreview(url);
+    }
   };
 
   const validateForm = () => {
@@ -71,43 +102,43 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Clear previous debug info
-    setDebugInfo('');
     setLocalError(null);
     
-    console.log('=== REGISTRATION DEBUG ===');
-    console.log('1. Form Data:', {
-      username: formData.username,
-      email: formData.email,
-      password: '[HIDDEN]',
-      confirm_password: '[HIDDEN]',
-      bio: formData.bio
-    });
-
     if (!validateForm()) {
       return;
     }
 
-    console.log('2. Validation passed');
     setLoading(true);
-    setDebugInfo('Sending request to backend...');
 
     try {
-      console.log('3. Calling register function...');
+      // Register user first
       const result = await register(formData);
       
-      console.log('4. Registration successful:', result);
-      setDebugInfo('Registration successful! Redirecting...');
+      // Upload avatar if selected
+      if (selectedAvatar) {
+        const avatarFormData = new FormData();
+        avatarFormData.append('file', selectedAvatar);
+        
+        try {
+          // You'll need to add this API call to your ApiService
+          await fetch('/users/avatar', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            },
+            body: avatarFormData
+          });
+        } catch (avatarError) {
+          console.error('Avatar upload failed:', avatarError);
+          // Don't fail registration if avatar upload fails
+        }
+      }
+      
       navigate('/dashboard');
       
     } catch (error) {
-      console.log('5. Registration failed:');
-      console.log('Error object:', error);
-      console.log('Error response:', error.response);
-      console.log('Error response data:', error.response?.data);
-      console.log('Error response status:', error.response?.status);
+      console.log('Registration failed:', error);
       
-      // Detailed error message
       let errorMessage = 'Registration failed';
       
       if (error.response?.data?.detail) {
@@ -125,7 +156,6 @@ const Register = () => {
       }
       
       setLocalError(errorMessage);
-      setDebugInfo(`Error: ${errorMessage}`);
       
     } finally {
       setLoading(false);
@@ -146,13 +176,60 @@ const Register = () => {
             </Alert>
           )}
 
-          {debugInfo && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Debug: {debugInfo}
-            </Alert>
-          )}
-
           <Box component="form" onSubmit={handleSubmit}>
+            {/* Avatar Upload Section */}
+            <Card variant="outlined" sx={{ mb: 3, textAlign: 'center' }}>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  Profile Photo (Optional)
+                </Typography>
+                
+                <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                  <Avatar
+                    src={avatarPreview}
+                    sx={{ 
+                      width: 80, 
+                      height: 80, 
+                      mx: 'auto', 
+                      mb: 1,
+                      bgcolor: 'primary.main'
+                    }}
+                  >
+                    {!avatarPreview && <AccountCircle sx={{ fontSize: 50 }} />}
+                  </Avatar>
+                  
+                  <input
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    id="avatar-upload"
+                    type="file"
+                    onChange={handleAvatarSelect}
+                  />
+                  <label htmlFor="avatar-upload">
+                    <IconButton
+                      color="primary"
+                      component="span"
+                      sx={{
+                        position: 'absolute',
+                        bottom: -5,
+                        right: -5,
+                        backgroundColor: 'white',
+                        border: '2px solid',
+                        borderColor: 'primary.main',
+                        '&:hover': { backgroundColor: 'grey.100' }
+                      }}
+                    >
+                      <PhotoCamera fontSize="small" />
+                    </IconButton>
+                  </label>
+                </Box>
+                
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Max 5MB • JPG, PNG, GIF
+                </Typography>
+              </CardContent>
+            </Card>
+
             <TextField
               fullWidth
               label="Username"
@@ -237,24 +314,6 @@ const Register = () => {
               Already have an account? Sign In
             </Link>
           </Box>
-          
-          {/* Debug Section */}
-          {process.env.NODE_ENV === 'development' && (
-            <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-              <Typography variant="caption" display="block">
-                API URL: {process.env.REACT_APP_API_URL || 'http://localhost:8000'}
-              </Typography>
-              <Typography variant="caption" display="block">
-                Form valid: {JSON.stringify({
-                  username: formData.username.length >= 3,
-                  email: formData.email.includes('@'),
-                  password: formData.password.length >= 8,
-                  match: formData.password === formData.confirm_password,
-                  terms: agreedToTerms
-                })}
-              </Typography>
-            </Box>
-          )}
         </Paper>
       </Box>
     </Container>
