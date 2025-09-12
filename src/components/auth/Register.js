@@ -1,4 +1,4 @@
-// src/components/auth/Register.js (Simplified debugging version)
+// src/components/auth/Register.js - Debug version
 import React, { useState } from 'react';
 import { 
   Container, 
@@ -26,6 +26,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [localError, setLocalError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState('');
   
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -40,13 +41,33 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('=== FORM SUBMIT TRIGGERED ===');
-    console.log('Form data:', formData);
-    console.log('Terms agreed:', agreedToTerms);
+    
+    // Clear previous debug info
+    setDebugInfo('');
+    setLocalError(null);
+    
+    console.log('=== REGISTRATION DEBUG ===');
+    console.log('1. Form Data:', {
+      username: formData.username,
+      email: formData.email,
+      password: '[HIDDEN]',
+      confirm_password: '[HIDDEN]',
+      bio: formData.bio
+    });
 
-    // Simple validation
+    // Basic validation
     if (!formData.username || !formData.email || !formData.password || !formData.confirm_password) {
       setLocalError('Please fill in all required fields');
+      return;
+    }
+
+    if (formData.username.length < 3) {
+      setLocalError('Username must be at least 3 characters long');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setLocalError('Password must be at least 8 characters long');
       return;
     }
 
@@ -60,33 +81,48 @@ const Register = () => {
       return;
     }
 
+    console.log('2. Validation passed');
     setLoading(true);
-    console.log('Starting registration...');
+    setDebugInfo('Sending request to backend...');
 
     try {
+      console.log('3. Calling register function...');
       const result = await register(formData);
-      console.log('Registration successful:', result);
+      
+      console.log('4. Registration successful:', result);
+      setDebugInfo('Registration successful! Redirecting...');
       navigate('/dashboard');
+      
     } catch (error) {
-      console.error('Registration failed:', error);
-      setLocalError('Registration failed: ' + (error.message || 'Unknown error'));
+      console.log('5. Registration failed:');
+      console.log('Error object:', error);
+      console.log('Error response:', error.response);
+      console.log('Error response data:', error.response?.data);
+      console.log('Error response status:', error.response?.status);
+      
+      // Detailed error message
+      let errorMessage = 'Registration failed';
+      
+      if (error.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          errorMessage = error.response.data.detail.map(err => 
+            err.msg || err.toString()
+          ).join(', ');
+        } else {
+          errorMessage = error.response.data.detail;
+        }
+      } else if (error.response?.data) {
+        errorMessage = JSON.stringify(error.response.data);
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setLocalError(errorMessage);
+      setDebugInfo(`Error: ${errorMessage}`);
+      
     } finally {
       setLoading(false);
     }
-  };
-
-  // Test button click
-  const handleButtonClick = (e) => {
-    console.log('=== BUTTON CLICKED ===');
-    console.log('Event:', e);
-    console.log('Loading state:', loading);
-    console.log('Form valid check:', {
-      username: !!formData.username,
-      email: !!formData.email,
-      password: !!formData.password,
-      confirm_password: !!formData.confirm_password,
-      terms: agreedToTerms
-    });
   };
 
   return (
@@ -103,6 +139,12 @@ const Register = () => {
             </Alert>
           )}
 
+          {debugInfo && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Debug: {debugInfo}
+            </Alert>
+          )}
+
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
@@ -112,6 +154,7 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
+              helperText="At least 3 characters"
             />
 
             <TextField
@@ -134,6 +177,7 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
+              helperText="At least 8 characters with upper, lower, and number"
             />
 
             <TextField
@@ -145,6 +189,17 @@ const Register = () => {
               onChange={handleChange}
               margin="normal"
               required
+            />
+
+            <TextField
+              fullWidth
+              label="Bio (Optional)"
+              name="bio"
+              value={formData.bio}
+              onChange={handleChange}
+              margin="normal"
+              multiline
+              rows={2}
             />
 
             <FormControlLabel
@@ -165,7 +220,6 @@ const Register = () => {
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
-              onClick={handleButtonClick}
             >
               {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
@@ -175,6 +229,22 @@ const Register = () => {
             <Link component={RouterLink} to="/login">
               Already have an account? Sign In
             </Link>
+          </Box>
+          
+          {/* Debug Section */}
+          <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+            <Typography variant="caption" display="block">
+              API URL: {process.env.REACT_APP_API_URL || 'http://localhost:8000'}
+            </Typography>
+            <Typography variant="caption" display="block">
+              Form valid: {JSON.stringify({
+                username: formData.username.length >= 3,
+                email: formData.email.includes('@'),
+                password: formData.password.length >= 8,
+                match: formData.password === formData.confirm_password,
+                terms: agreedToTerms
+              })}
+            </Typography>
           </Box>
         </Paper>
       </Box>

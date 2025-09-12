@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.js
+// src/contexts/AuthContext.js - Fixed version
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import ApiService from '../services/api'
 
@@ -21,9 +21,9 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('access_token')
     if (token) {
       // Verify token is still valid by getting user info
-      ApiService.api.get('/auth/me')
+      ApiService.getCurrentUser()
         .then(response => {
-          setUser(response.data)
+          setUser(response)
         })
         .catch(() => {
           localStorage.removeItem('access_token')
@@ -37,46 +37,39 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
-    const login = async (credentials) => {
+  const login = async (credentials) => {
     try {
-        setError(null);
-        console.log('Attempting login with:', { email: credentials.email, password: '[HIDDEN]' });
-        const response = await ApiService.login(credentials);
-        
-        localStorage.setItem('access_token', response.access_token);
-        localStorage.setItem('refresh_token', response.refresh_token);
-        setUser(response.user);
-        
-        return response;
+      setError(null);
+      const response = await ApiService.login(credentials);
+      
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
+      setUser(response.user);
+      
+      return response;
     } catch (error) {
-        console.error('Login error details:', error.response?.data);
-        setError(error.response?.data?.detail || 'Login failed');
-        throw error;
+      console.error('Login error details:', error.response?.data);
+      setError(error.response?.data?.detail || 'Login failed');
+      throw error;
     }
-    }
-
-// In your AuthContext.js, update the register function:
-const register = async (userData) => {
-  try {
-    setError(null);
-    const response = await ApiService.register(userData);
-    
-    localStorage.setItem('access_token', response.access_token);
-    localStorage.setItem('refresh_token', response.refresh_token);
-    setUser(response.user);
-    
-    return response;
-  } catch (error) {
-    console.error('Registration error details:');
-    console.error('Status:', error.response?.status);
-    console.error('Status text:', error.response?.statusText);
-    console.error('Error data:', error.response?.data);
-    console.error('Request config:', error.config);
-    
-    setError(error.response?.data?.detail || error.response?.data || 'Registration failed');
-    throw error;
   }
-};
+
+  const register = async (userData) => {
+    try {
+      setError(null);
+      const response = await ApiService.register(userData);
+      
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
+      setUser(response.user);
+      
+      return response;
+    } catch (error) {
+      console.error('Registration error details:', error.response?.data);
+      setError(error.response?.data?.detail || error.response?.data || 'Registration failed');
+      throw error;
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('access_token')

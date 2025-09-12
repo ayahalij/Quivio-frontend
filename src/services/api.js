@@ -1,4 +1,4 @@
-// src/services/api.js
+// src/services/api.js - Improved version
 import axios from 'axios'
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000'
@@ -19,14 +19,35 @@ class ApiService {
       return config
     })
 
-    // Handle auth errors
+    // Handle auth errors and token refresh
     this.api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          window.location.href = '/login'
+          const refreshToken = localStorage.getItem('refresh_token')
+          
+          if (refreshToken) {
+            try {
+              const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+                refresh_token: refreshToken
+              })
+              
+              localStorage.setItem('access_token', response.data.access_token)
+              
+              // Retry the original request
+              error.config.headers.Authorization = `Bearer ${response.data.access_token}`
+              return this.api.request(error.config)
+            } catch (refreshError) {
+              // Refresh failed, redirect to login
+              localStorage.removeItem('access_token')
+              localStorage.removeItem('refresh_token')
+              window.location.href = '/login'
+            }
+          } else {
+            // No refresh token, redirect to login
+            localStorage.removeItem('access_token')
+            window.location.href = '/login'
+          }
         }
         return Promise.reject(error)
       }
@@ -41,6 +62,11 @@ class ApiService {
 
   async login(credentials) {
     const response = await this.api.post('/auth/login', credentials)
+    return response.data
+  }
+
+  async getCurrentUser() {
+    const response = await this.api.get('/auth/me')
     return response.data
   }
 
@@ -61,8 +87,24 @@ class ApiService {
     return response.data
   }
 
+  async completeChallenge(challengeId, data) {
+    const response = await this.api.post(`/challenges/complete/${challengeId}`, data)
+    return response.data
+  }
+
   async getChallengeStats() {
     const response = await this.api.get('/challenges/stats/me')
+    return response.data
+  }
+
+  // User endpoints  
+  async getUserStats() {
+    const response = await this.api.get('/users/stats')
+    return response.data
+  }
+
+  async updateProfile(profileData) {
+    const response = await this.api.put('/users/profile', profileData)
     return response.data
   }
 
@@ -73,9 +115,10 @@ class ApiService {
   }
 
   async searchEntries(searchTerm) {
-    const response = await this.api.get(`/timeline/search?q=${searchTerm}`)
+    const response = await this.api.get(`/timeline/search?q=${encodeURIComponent(searchTerm)}`)
     return response.data
   }
 }
 
-export default new ApiService()
+const apiService = new ApiService()
+export default apiService
