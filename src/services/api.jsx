@@ -172,6 +172,18 @@ class ApiService {
     return response.data
   }
 
+  async completeChallengeWithPhoto(challengeId, file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    const response = await this.api.post(`/challenges/complete-with-photo/${challengeId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  }
+
   async getChallengeStats() {
     const response = await this.api.get('/challenges/stats/me')
     return response.data
