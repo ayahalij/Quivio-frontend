@@ -1,4 +1,4 @@
-// src/components/daily/DiaryEntry.js
+// src/components/daily/DiaryEntry.jsx - Complete Fixed Version
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -13,8 +13,8 @@ import {
 } from '@mui/material';
 import ApiService from '../../services/api';
 
-const DiaryEntry = ({ open, onClose, onSuccess }) => {
-  const [content, setContent] = useState('');
+const DiaryEntry = ({ open, onClose, onSuccess, initialData }) => {
+  const [content, setContent] = useState(initialData?.content || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -30,11 +30,19 @@ const DiaryEntry = ({ open, onClose, onSuccess }) => {
     setError(null);
 
     try {
+      // FIXED: Always use current date
+      const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      console.log('=== DIARY SUBMIT DEBUG ===');
+      console.log('Current date being sent:', currentDate);
+      console.log('Diary content:', content.trim());
+      console.log('Word count:', wordCount);
+      
       const result = await ApiService.createDiary({
         content: content.trim()
-      });
+      }, currentDate); // Pass current date explicitly
       
-      console.log('Diary entry saved:', result);
+      console.log('Diary entry saved successfully:', result);
       onSuccess && onSuccess(result);
       onClose();
       setContent('');
@@ -46,8 +54,13 @@ const DiaryEntry = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  const handleClose = () => {
+    setError(null);
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>Today's Journal Entry</DialogTitle>
       <DialogContent>
         {error && (
@@ -76,13 +89,13 @@ const DiaryEntry = ({ open, onClose, onSuccess }) => {
             {wordCount} words
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            You can edit this until 11:59 PM today
+            You can edit this until 11:59 PM today ({new Date().toISOString().split('T')[0]})
           </Typography>
         </Box>
       </DialogContent>
       
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleClose}>Cancel</Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained"

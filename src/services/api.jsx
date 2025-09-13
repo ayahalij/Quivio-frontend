@@ -1,4 +1,4 @@
-// src/services/api.jsx - Complete API Service with Avatar Upload
+// src/services/api.js - Corrected and Complete API Service
 import axios from 'axios'
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000'
@@ -54,6 +54,22 @@ class ApiService {
     )
   }
 
+  // Helper method to format dates consistently
+  formatDateForAPI(date) {
+    if (!date) return null;
+    
+    if (typeof date === 'string') {
+      // Assume it's already in correct format
+      return date;
+    }
+    
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    }
+    
+    return null;
+  }
+
   // Auth endpoints
   async register(userData) {
     const response = await this.api.post('/auth/register', userData)
@@ -70,7 +86,7 @@ class ApiService {
     return response.data
   }
 
-  // USER AVATAR UPLOAD - ADDED THIS METHOD
+  // User endpoints
   async uploadAvatar(file) {
     const formData = new FormData()
     formData.append('file', file)
@@ -83,15 +99,66 @@ class ApiService {
     return response.data
   }
 
-  // Daily endpoints
-  async createMood(moodData) {
-    const response = await this.api.post('/daily/mood', moodData)
+  async getUserStats() {
+    const response = await this.api.get('/users/stats')
     return response.data
   }
 
-  async createDiary(diaryData) {
-    const response = await this.api.post('/daily/diary', diaryData)
+  async updateProfile(profileData) {
+    const response = await this.api.put('/users/profile', profileData)
     return response.data
+  }
+
+  // Daily endpoints - POST methods (create/update)
+  async createMood(moodData, entryDate = null) {
+    const params = new URLSearchParams();
+    if (entryDate) {
+      params.append('entry_date', entryDate);
+    }
+    
+    const response = await this.api.post(`/daily/mood?${params}`, moodData);
+    return response.data;
+  }
+
+  async createDiary(diaryData, entryDate = null) {
+    const params = new URLSearchParams();
+    if (entryDate) {
+      params.append('entry_date', entryDate);
+    }
+    
+    const response = await this.api.post(`/daily/diary?${params}`, diaryData);
+    return response.data;
+  }
+
+  // Daily endpoints - GET methods (retrieve)
+  async getMood(entryDate = null) {
+    const params = new URLSearchParams();
+    if (entryDate) {
+      params.append('entry_date', entryDate);
+    }
+    
+    const response = await this.api.get(`/daily/mood?${params}`);
+    return response.data;
+  }
+
+  async getDiary(entryDate = null) {
+    const params = new URLSearchParams();
+    if (entryDate) {
+      params.append('entry_date', entryDate);
+    }
+    
+    const response = await this.api.get(`/daily/diary?${params}`);
+    return response.data;
+  }
+
+  async getDailyEntry(entryDate = null) {
+    const params = new URLSearchParams();
+    if (entryDate) {
+      params.append('entry_date', entryDate);
+    }
+    
+    const response = await this.api.get(`/daily/entry?${params}`);
+    return response.data;
   }
 
   // Challenge endpoints
@@ -110,15 +177,19 @@ class ApiService {
     return response.data
   }
 
-  // User endpoints  
-  async getUserStats() {
-    const response = await this.api.get('/users/stats')
-    return response.data
+  // Photo endpoints
+  async getPhotoLocations(startDate = null, endDate = null) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const response = await this.api.get(`/photos/locations?${params}`);
+    return response.data;
   }
 
-  async updateProfile(profileData) {
-    const response = await this.api.put('/users/profile', profileData)
-    return response.data
+  async getPhotoStats() {
+    const response = await this.api.get('/photos/stats');
+    return response.data;
   }
 
   // Timeline endpoints
@@ -132,62 +203,47 @@ class ApiService {
     return response.data
   }
 
-    // Capsules endpoints
-    async getCapsules() {
+  // Capsules endpoints
+  async getCapsules() {
     const response = await this.api.get('/capsules/');
     return response.data;
-    }
+  }
 
-    async createCapsule(capsuleData) {
+  async createCapsule(capsuleData) {
     const response = await this.api.post('/capsules/', capsuleData);
     return response.data;
-    }
+  }
 
-    async openCapsule(capsuleId) {
+  async openCapsule(capsuleId) {
     const response = await this.api.put(`/capsules/${capsuleId}/open`);
     return response.data;
-    }
+  }
 
-    async getCapsule(capsuleId) {
+  async getCapsule(capsuleId) {
     const response = await this.api.get(`/capsules/${capsuleId}`);
     return response.data;
-    }
+  }
 
-    // Analytics endpoints
-    async getMoodTrends(days = 30) {
+  // Analytics endpoints
+  async getMoodTrends(days = 30) {
     const response = await this.api.get(`/analytics/mood-trends?days=${days}`);
     return response.data;
-    }
+  }
 
-    async getMoodDistribution(days = 30) {
+  async getMoodDistribution(days = 30) {
     const response = await this.api.get(`/analytics/mood-distribution?days=${days}`);
     return response.data;
-    }
+  }
 
-    async getActivitySummary(days = 30) {
+  async getActivitySummary(days = 30) {
     const response = await this.api.get(`/analytics/activity-summary?days=${days}`);
     return response.data;
-    }
+  }
 
-    async getInsights() {
+  async getInsights() {
     const response = await this.api.get('/analytics/insights');
     return response.data;
-    }
-
-    // Photo endpoints
-    async getPhotoLocations(startDate = null, endDate = null) {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    
-    const response = await this.api.get(`/photos/locations?${params}`);
-    return response.data;
-    }
-
-    async getPhotoStats() {
-    const response = await this.api.get('/photos/stats');
-    return response.data;
-    }
+  }
 }
 
 const apiService = new ApiService()
