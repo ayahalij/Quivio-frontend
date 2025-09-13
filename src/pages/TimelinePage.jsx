@@ -51,6 +51,8 @@ import dayjs from 'dayjs';
 import { useLocation, useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import PhotoViewer from '../components/common/PhotoViewer';
+import { Assignment, CheckCircle } from '@mui/icons-material';
 
 // Fix for default markers in Leaflet with React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -124,6 +126,10 @@ const TimelinePage = () => {
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [photoStats, setPhotoStats] = useState(null);
   const [timeFilter, setTimeFilter] = useState('all');
+
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   // Update URL when tab changes
   const handleTabChange = (event, newValue) => {
@@ -314,6 +320,25 @@ const TimelinePage = () => {
     return 10;
   };
 
+  const handlePhotoClick = (photos, index = 0) => {
+  // Convert photo data to format expected by PhotoViewer
+  const formattedPhotos = photos.map(photo => ({
+    url: photo.url,
+    title: photo.title,
+    date: photo.date,
+    location_lat: photo.location_lat,
+    location_lng: photo.location_lng
+  }));
+  
+  setSelectedPhotos(formattedPhotos);
+  setSelectedPhotoIndex(index);
+  setPhotoViewerOpen(true);
+};
+
+const handleSinglePhotoClick = (photo) => {
+  handlePhotoClick([photo], 0);
+};
+
   const renderDayCard = (day) => {
     if (!day) {
       return <Box key={`empty-${Math.random()}`} sx={{ height: 80 }} />;
@@ -345,7 +370,8 @@ const TimelinePage = () => {
           </Typography>
           
           {dayData && (
-            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+              {/* Mood indicator */}
               {dayData.mood && (
                 <Box
                   sx={{
@@ -357,6 +383,7 @@ const TimelinePage = () => {
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}
+                  title={`Mood: ${dayData.mood.level}/5`}
                 >
                   <Typography variant="caption" sx={{ fontSize: 10 }}>
                     {MOOD_EMOJIS[dayData.mood.level]}
@@ -364,12 +391,35 @@ const TimelinePage = () => {
                 </Box>
               )}
               
+              {/* Diary indicator */}
               {dayData.diary && (
-                <Edit sx={{ fontSize: 12, color: '#666' }} />
+                <Edit 
+                  sx={{ fontSize: 12, color: '#666' }} 
+                  title="Has diary entry"
+                />
               )}
               
+              {/* Photo indicator */}
               {dayData.photos && dayData.photos.length > 0 && (
-                <CameraAlt sx={{ fontSize: 12, color: '#666' }} />
+                <CameraAlt 
+                  sx={{ fontSize: 12, color: '#666' }} 
+                  title={`${dayData.photos.length} photo${dayData.photos.length !== 1 ? 's' : ''}`}
+                />
+              )}
+
+              {/* Challenge indicator */}
+              {dayData.challenge && (
+                <Assignment 
+                  sx={{ 
+                    fontSize: 12, 
+                    color: dayData.challenge.is_completed ? '#4caf50' : '#ff9800' 
+                  }} 
+                  title={
+                    dayData.challenge.is_completed 
+                      ? 'Challenge completed' 
+                      : 'Challenge available'
+                  }
+                />
               )}
             </Box>
           )}
@@ -831,7 +881,17 @@ const TimelinePage = () => {
                 <Grid container spacing={2}>
                   {selectedDay.data.photos.map((photo, index) => (
                     <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Card>
+                      <Card 
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            transform: 'scale(1.02)',
+                            transition: 'transform 0.2s ease-in-out',
+                            boxShadow: 3
+                          }
+                        }}
+                        onClick={() => handlePhotoClick(selectedDay.data.photos, index)}
+                      >
                         <Box sx={{ position: 'relative' }}>
                           <img
                             src={photo.url}
@@ -859,6 +919,25 @@ const TimelinePage = () => {
                               }}
                             />
                           )}
+                          {/* Add click indicator overlay */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: 4,
+                              right: 4,
+                              backgroundColor: 'rgba(0,0,0,0.7)',
+                              borderRadius: '50%',
+                              width: 24,
+                              height: 24,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ color: 'white', fontSize: 10 }}>
+                              👁️
+                            </Typography>
+                          </Box>
                         </Box>
                         <CardContent sx={{ p: 1 }}>
                           <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
@@ -923,18 +1002,141 @@ const TimelinePage = () => {
               </Box>
             )}
 
-            {selectedDay.data.challenge && (
-              <Box>
+           {selectedDay.data.challenge && (
+              <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle1" gutterBottom>Daily Challenge</Typography>
-                <Typography variant="body2">
-                  {selectedDay.data.challenge.challenge_text}
-                </Typography>
-                <Chip 
-                  label={selectedDay.data.challenge.is_completed ? 'Completed' : 'Not completed'}
-                  color={selectedDay.data.challenge.is_completed ? 'success' : 'default'}
-                  size="small"
-                  sx={{ mt: 1 }}
-                />
+                
+                <Card variant="outlined" sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Assignment color="primary" />
+                        <Typography variant="h6">
+                          Photography Challenge
+                        </Typography>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {selectedDay.data.challenge.difficulty_level && (
+                          <Chip 
+                            label={selectedDay.data.challenge.difficulty_level} 
+                            color={
+                              selectedDay.data.challenge.difficulty_level?.toLowerCase() === 'easy' ? 'success' :
+                              selectedDay.data.challenge.difficulty_level?.toLowerCase() === 'medium' ? 'warning' :
+                              selectedDay.data.challenge.difficulty_level?.toLowerCase() === 'hard' ? 'error' : 'primary'
+                            }
+                            size="small"
+                          />
+                        )}
+                        
+                        <Chip 
+                          label={selectedDay.data.challenge.is_completed ? 'Completed' : 'Not Completed'}
+                          color={selectedDay.data.challenge.is_completed ? 'success' : 'default'}
+                          size="small"
+                          icon={selectedDay.data.challenge.is_completed ? <CheckCircle /> : undefined}
+                        />
+                      </Box>
+                    </Box>
+
+                    <Typography variant="body1" paragraph>
+                      {selectedDay.data.challenge.challenge_text}
+                    </Typography>
+
+                    {selectedDay.data.challenge.is_completed && selectedDay.data.challenge.completed_at && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Completed: {dayjs(selectedDay.data.challenge.completed_at).format('MMM D, YYYY [at] h:mm A')}
+                      </Typography>
+                    )}
+
+                    {selectedDay.data.challenge.mood_level && (
+                      <Typography variant="body2" color="text.secondary">
+                        Based on mood level: {selectedDay.data.challenge.mood_level}/5
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Challenge Photo Section */}
+                {selectedDay.data.challenge.photo_url && (
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Challenge Photo
+                      </Typography>
+                      
+                      <Box 
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            transform: 'scale(1.02)',
+                            transition: 'transform 0.2s ease-in-out'
+                          }
+                        }}
+                        onClick={() => handleSinglePhotoClick({
+                          url: selectedDay.data.challenge.photo_url,
+                          title: `Challenge: ${selectedDay.data.challenge.challenge_text}`,
+                          date: selectedDay.data.challenge.completed_at || selectedDay.data.challenge.date
+                        })}
+                      >
+                        <Box sx={{ position: 'relative' }}>
+                          <img
+                            src={selectedDay.data.challenge.photo_url}
+                            alt="Challenge completion"
+                            style={{
+                              width: '100%',
+                              height: 'auto',
+                              maxHeight: 250,
+                              objectFit: 'contain',
+                              borderRadius: 8,
+                              border: '1px solid #ddd'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          
+                          {/* Click indicator */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: 8,
+                              right: 8,
+                              backgroundColor: 'rgba(0,0,0,0.7)',
+                              borderRadius: '50%',
+                              width: 32,
+                              height: 32,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ color: 'white', fontSize: 12 }}>
+                              👁️
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                      
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                        Click to view full size
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* If no photo but challenge completed */}
+                {selectedDay.data.challenge.is_completed && !selectedDay.data.challenge.photo_url && (
+                  <Alert severity="info" sx={{ mt: 1 }}>
+                    Challenge completed without photo
+                  </Alert>
+                )}
+
+                {/* If challenge not completed */}
+                {!selectedDay.data.challenge.is_completed && (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    Challenge not completed on this day
+                  </Alert>
+                )}
               </Box>
             )}
           </Paper>
@@ -963,7 +1165,17 @@ const TimelinePage = () => {
                 <Grid container spacing={2}>
                   {selectedLocation.photos.map((photo, index) => (
                     <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Card>
+                      <Card 
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            transform: 'scale(1.02)',
+                            transition: 'transform 0.2s ease-in-out',
+                            boxShadow: 3
+                          }
+                        }}
+                        onClick={() => handlePhotoClick(selectedLocation.photos, index)}
+                      >
                         <CardContent>
                           <Typography variant="subtitle2" gutterBottom>
                             {photo.title}
@@ -974,7 +1186,7 @@ const TimelinePage = () => {
                             variant="outlined"
                           />
                           {photo.url && (
-                            <Box sx={{ mt: 2 }}>
+                            <Box sx={{ mt: 2, position: 'relative' }}>
                               <img
                                 src={photo.url}
                                 alt={photo.title}
@@ -988,6 +1200,25 @@ const TimelinePage = () => {
                                   e.target.style.display = 'none';
                                 }}
                               />
+                              {/* Add click indicator */}
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  top: 4,
+                                  right: 4,
+                                  backgroundColor: 'rgba(0,0,0,0.7)',
+                                  borderRadius: '50%',
+                                  width: 20,
+                                  height: 20,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <Typography variant="caption" sx={{ color: 'white', fontSize: 8 }}>
+                                  👁️
+                                </Typography>
+                              </Box>
                             </Box>
                           )}
                         </CardContent>
@@ -1000,6 +1231,12 @@ const TimelinePage = () => {
           )}
         </Dialog>
       </Container>
+      <PhotoViewer
+        open={photoViewerOpen}
+        onClose={() => setPhotoViewerOpen(false)}
+        photos={selectedPhotos}
+        initialIndex={selectedPhotoIndex}
+      />
     </Box>
   );
 };

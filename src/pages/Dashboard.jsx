@@ -34,6 +34,8 @@ import DailyChallenge from '../components/challenges/DailyChallenge';
 import PhotoUpload from '../components/daily/PhotoUpload';
 import { useNavigate } from 'react-router-dom';
 import ApiService from '../services/api';
+import PhotoViewer from '../components/common/PhotoViewer';
+
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -53,6 +55,9 @@ const Dashboard = () => {
 
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
+
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
 
   // Load today's data on component mount
   useEffect(() => {
@@ -144,6 +149,19 @@ const Dashboard = () => {
       </Box>
     );
   }
+
+  const handlePhotoClick = (photo) => {
+    const formattedPhoto = {
+      url: photo.url || photo.image_url,
+      title: photo.title,
+      date: photo.date,
+      location_lat: photo.location_lat,
+      location_lng: photo.location_lng
+    };
+    
+    setSelectedPhotos([formattedPhoto]);
+    setPhotoViewerOpen(true);
+  };
 
   return (
     <Box>
@@ -517,7 +535,14 @@ const Dashboard = () => {
         onClose={() => setPhotoDialogOpen(false)}
         onSuccess={handlePhotoSuccess}
       />
-    </Box>
+
+      <PhotoViewer
+        open={photoViewerOpen}
+        onClose={() => setPhotoViewerOpen(false)}
+        photos={selectedPhotos}
+        initialIndex={0}
+      />
+  </Box>
   );
 };
 
