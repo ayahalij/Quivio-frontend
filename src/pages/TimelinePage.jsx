@@ -131,6 +131,9 @@ const TimelinePage = () => {
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
+  const [capsuleViewerOpen, setCapsuleViewerOpen] = useState(false);
+  const [selectedCapsule, setSelectedCapsule] = useState(null);
+
   // Update URL when tab changes
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
@@ -427,6 +430,128 @@ const handleSinglePhotoClick = (photo) => {
       </Card>
     );
   };
+
+    const handleCapsuleClick = async (capsuleId) => {
+  try {
+    setLoading(true);
+    const capsuleData = await ApiService.getCapsule(capsuleId);
+    setSelectedCapsule(capsuleData);
+    setCapsuleViewerOpen(true);
+  } catch (error) {
+    console.error('Failed to fetch capsule details:', error);
+    setError('Failed to load capsule details');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleCapsuleMediaClick = (media, allMedia) => {
+  const photos = allMedia
+    .filter(m => m.media_type === 'image')
+    .map(m => ({
+      url: m.media_url,
+      title: 'Capsule Media',
+      date: selectedCapsule?.created_at
+    }));
+  
+  const clickedIndex = photos.findIndex(p => p.url === media.media_url);
+  
+  setSelectedPhotos(photos);
+  setSelectedPhotoIndex(Math.max(0, clickedIndex));
+  setPhotoViewerOpen(true);
+};
+
+const renderCapsuleMedia = (media) => {
+  const images = media.filter(m => m.media_type === 'image');
+  const videos = media.filter(m => m.media_type === 'video');
+  
+  return (
+    <Box sx={{ mt: 2 }}>
+      {images.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Images ({images.length})
+          </Typography>
+          <Grid container spacing={1}>
+            {images.map((image, index) => (
+              <Grid item xs={4} key={index}>
+                <Card 
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': { 
+                      transform: 'scale(1.05)',
+                      transition: 'transform 0.2s ease-in-out'
+                    }
+                  }}
+                  onClick={() => handleCapsuleMediaClick(image, media)}
+                >
+                  <Box sx={{ position: 'relative' }}>
+                    <img
+                      src={image.media_url}
+                      alt="Capsule media"
+                      style={{
+                        width: '100%',
+                        height: 80,
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: 2,
+                        right: 2,
+                        backgroundColor: 'rgba(0,0,0,0.7)',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ color: 'white', fontSize: 8 }}>
+                        👁️
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+      
+      {videos.length > 0 && (
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Videos ({videos.length})
+          </Typography>
+          <Grid container spacing={1}>
+            {videos.map((video, index) => (
+              <Grid item xs={6} key={index}>
+                <Card>
+                  <Box sx={{ position: 'relative' }}>
+                    <video
+                      controls
+                      style={{
+                        width: '100%',
+                        height: 120,
+                        objectFit: 'cover'
+                      }}
+                    >
+                      <source src={video.media_url} />
+                      Your browser does not support the video tag.
+                    </video>
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+    </Box>
+  );
+};
 
   return (
     <Box>
@@ -952,55 +1077,91 @@ const handleSinglePhotoClick = (photo) => {
             )}
 
             {selectedDay.data.capsules && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>Memory Capsules</Typography>
-                
-                {selectedDay.data.capsules.created && selectedDay.data.capsules.created.length > 0 && (
-                  <Box sx={{ mb: 1 }}>
-                    <Typography variant="body2" color="primary" gutterBottom>
-                      📦 Capsules Created
-                    </Typography>
-                    {selectedDay.data.capsules.created.map((capsule, index) => (
-                      <Card key={index} sx={{ mb: 1, backgroundColor: '#e3f2fd' }}>
-                        <CardContent sx={{ p: 2 }}>
-                          <Typography variant="subtitle2">{capsule.title}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Opens: {dayjs(capsule.open_date).format('MMM D, YYYY')}
-                          </Typography>
-                          <Chip
-                            label={capsule.is_opened ? 'Opened' : 'Locked'}
-                            size="small"
-                            color={capsule.is_opened ? 'success' : 'default'}
-                            sx={{ mt: 1 }}
-                          />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Box>
-                )}
-                
-                {selectedDay.data.capsules.opened && selectedDay.data.capsules.opened.length > 0 && (
-                  <Box>
-                    <Typography variant="body2" color="success.main" gutterBottom>
-                      🎉 Capsules Opened
-                    </Typography>
-                    {selectedDay.data.capsules.opened.map((capsule, index) => (
-                      <Card key={index} sx={{ mb: 1, backgroundColor: '#e8f5e8' }}>
-                        <CardContent sx={{ p: 2 }}>
-                          <Typography variant="subtitle2">{capsule.title}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Created: {dayjs(capsule.created_date).format('MMM D, YYYY')}
-                          </Typography>
-                          <Typography variant="body2" sx={{ mt: 1 }}>
-                            {capsule.message}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Box>
-                )}
+  <Box sx={{ mb: 2 }}>
+    <Typography variant="subtitle1" gutterBottom>Memory Capsules</Typography>
+    
+    {selectedDay.data.capsules.created && selectedDay.data.capsules.created.length > 0 && (
+      <Box sx={{ mb: 1 }}>
+        <Typography variant="body2" color="primary" gutterBottom>
+          📦 Capsules Created
+        </Typography>
+        {selectedDay.data.capsules.created.map((capsule, index) => (
+          <Card key={index} sx={{ mb: 1, backgroundColor: '#e3f2fd' }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="subtitle2">{capsule.title}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Opens: {dayjs(capsule.open_date).format('MMM D, YYYY')}
+              </Typography>
+              <Chip
+                label={capsule.is_opened ? 'Opened' : 'Locked'}
+                size="small"
+                color={capsule.is_opened ? 'success' : 'default'}
+                sx={{ mt: 1 }}
+              />
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    )}
+    
+    {selectedDay.data.capsules.opened && selectedDay.data.capsules.opened.length > 0 && (
+      <Box>
+        <Typography variant="body2" color="success.main" gutterBottom>
+          🎉 Capsules Opened
+        </Typography>
+        {selectedDay.data.capsules.opened.map((capsule, index) => (
+          <Card 
+            key={index} 
+            sx={{ 
+              mb: 1, 
+              backgroundColor: '#e8f5e8',
+              cursor: 'pointer',
+              '&:hover': { 
+                boxShadow: 2,
+                backgroundColor: '#d4edda'
+              }
+            }}
+            onClick={() => handleCapsuleClick(capsule.id)}
+          >
+            <CardContent sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2">{capsule.title}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Created: {dayjs(capsule.created_date).format('MMM D, YYYY')}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {capsule.message}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    borderRadius: '50%',
+                    width: 32,
+                    height: 32,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    ml: 1
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: '#4caf50', fontSize: 12 }}>
+                    👁️
+                  </Typography>
+                </Box>
               </Box>
-            )}
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                Click to view full capsule content
+              </Typography>
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    )}
+  </Box>
+)}
+
 
            {selectedDay.data.challenge && (
               <Box sx={{ mb: 2 }}>
@@ -1231,6 +1392,59 @@ const handleSinglePhotoClick = (photo) => {
           )}
         </Dialog>
       </Container>
+      <Dialog open={capsuleViewerOpen} onClose={() => setCapsuleViewerOpen(false)} maxWidth="md" fullWidth>
+  {selectedCapsule && (
+    <>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h6">
+              {selectedCapsule.title}
+            </Typography>
+            <Chip
+              label="Opened Capsule"
+              size="small"
+              color="success"
+              sx={{ mt: 0.5 }}
+            />
+          </Box>
+          <IconButton onClick={() => setCapsuleViewerOpen(false)}>
+            <Close />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        <Typography variant="body1" paragraph sx={{ whiteSpace: 'pre-wrap' }}>
+          {selectedCapsule.message}
+        </Typography>
+        
+        {/* Display media if available */}
+        {selectedCapsule.media && selectedCapsule.media.length > 0 && (
+          renderCapsuleMedia(selectedCapsule.media)
+        )}
+        
+        <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            <strong>Created:</strong> {dayjs(selectedCapsule.created_at).format('MMMM D, YYYY at h:mm A')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            <strong>Scheduled to open:</strong> {dayjs(selectedCapsule.open_date).format('MMMM D, YYYY at h:mm A')}
+          </Typography>
+          {!selectedCapsule.is_private && selectedCapsule.recipient_email && (
+            <Typography variant="body2" color="text.secondary">
+              <strong>Shared with:</strong> {selectedCapsule.recipient_email}
+            </Typography>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setCapsuleViewerOpen(false)}>
+          Close
+        </Button>
+      </DialogActions>
+    </>
+  )}
+</Dialog>
       <PhotoViewer
         open={photoViewerOpen}
         onClose={() => setPhotoViewerOpen(false)}
