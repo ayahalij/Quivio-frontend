@@ -1,4 +1,4 @@
-// src/pages/CapsulesPage.js - Updated with Real API
+// src/pages/CapsulesPage.jsx - Enhanced with Media Upload Support
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -8,7 +8,6 @@ import {
   Card,
   CardContent,
   Button,
-  Fab,
   Chip,
   Dialog,
   DialogTitle,
@@ -20,7 +19,10 @@ import {
   Avatar,
   Alert,
   CircularProgress,
-  IconButton
+  IconButton,
+  ImageList,
+  ImageListItem,
+  LinearProgress
 } from '@mui/material';
 import {
   Add,
@@ -29,7 +31,11 @@ import {
   LockOpen,
   Close,
   Send,
-  Person
+  CloudUpload,
+  PlayArrow,
+  Image as ImageIcon,
+  VideoFile,
+  Delete
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -37,6 +43,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { useAuth } from '../contexts/AuthContext';
 import ApiService from '../services/api';
+import PhotoViewer from '../components/common/PhotoViewer';
 
 const CapsulesPage = () => {
   const { user, logout } = useAuth();
@@ -55,9 +62,19 @@ const CapsulesPage = () => {
     is_private: true
   });
 
+  // Media upload states
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+
   // View capsule dialog
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCapsule, setSelectedCapsule] = useState(null);
+
+  // Photo viewer states
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   useEffect(() => {
     fetchCapsules();
@@ -76,6 +93,42 @@ const CapsulesPage = () => {
     }
   };
 
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = [];
+    
+    for (const file of files) {
+      // Validate file type
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        setError(`${file.name} is not a valid image or video file`);
+        continue;
+      }
+      
+      // Validate file size (50MB for videos, 10MB for images)
+      const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        const sizeLimit = file.type.startsWith('video/') ? '50MB' : '10MB';
+        setError(`${file.name} exceeds the ${sizeLimit} size limit`);
+        continue;
+      }
+      
+      validFiles.push(file);
+    }
+    
+    // Limit to 10 files total
+    const totalFiles = selectedFiles.length + validFiles.length;
+    if (totalFiles > 10) {
+      setError('Maximum 10 files allowed per capsule');
+      return;
+    }
+    
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCreateCapsule = async () => {
     if (!capsuleData.title.trim() || !capsuleData.message.trim()) {
       setError('Please fill in title and message');
@@ -87,17 +140,35 @@ const CapsulesPage = () => {
       return;
     }
 
-    setLoading(true);
+    setUploading(true);
     setError('');
+    setUploadProgress(0);
 
     try {
-      const newCapsule = await ApiService.createCapsule({
-        title: capsuleData.title.trim(),
-        message: capsuleData.message.trim(),
-        open_date: capsuleData.open_date.toISOString(),
-        is_private: capsuleData.is_private,
-        recipient_email: capsuleData.recipient_email || null
+      // Create FormData for capsule with media
+      const formData = new FormData();
+      formData.append('title', capsuleData.title.trim());
+      formData.append('message', capsuleData.message.trim());
+      formData.append('open_date', capsuleData.open_date.toISOString());
+      formData.append('is_private', capsuleData.is_private);
+      if (capsuleData.recipient_email) {
+        formData.append('recipient_email', capsuleData.recipient_email);
+      }
+
+      // Add files
+      selectedFiles.forEach(file => {
+        formData.append('files', file);
       });
+
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      const newCapsule = await ApiService.createCapsuleWithMedia(formData);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
       setCapsules(prev => [newCapsule, ...prev]);
       setSuccess('Memory capsule created successfully!');
@@ -109,7 +180,8 @@ const CapsulesPage = () => {
       console.error('Failed to create capsule:', error);
       setError(error.response?.data?.detail || 'Failed to create capsule');
     } finally {
-      setLoading(false);
+      setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -126,7 +198,6 @@ const CapsulesPage = () => {
       return;
     }
 
-    // Open the capsule via API
     try {
       const updatedCapsule = await ApiService.openCapsule(capsule.id);
       
@@ -145,6 +216,22 @@ const CapsulesPage = () => {
     }
   };
 
+  const handleMediaClick = (media, allMedia) => {
+    const photos = allMedia
+      .filter(m => m.media_type === 'image')
+      .map(m => ({
+        url: m.media_url,
+        title: 'Capsule Media',
+        date: selectedCapsule?.created_at
+      }));
+    
+    const clickedIndex = photos.findIndex(p => p.url === media.media_url);
+    
+    setSelectedPhotos(photos);
+    setSelectedPhotoIndex(Math.max(0, clickedIndex));
+    setPhotoViewerOpen(true);
+  };
+
   const resetCapsuleForm = () => {
     setCapsuleData({
       title: '',
@@ -153,6 +240,7 @@ const CapsulesPage = () => {
       recipient_email: '',
       is_private: true
     });
+    setSelectedFiles([]);
   };
 
   const getTimeUntilOpen = (openDate) => {
@@ -174,6 +262,129 @@ const CapsulesPage = () => {
     } else {
       return 'Opening soon';
     }
+  };
+
+  const renderMediaPreview = (file, index) => {
+    const isVideo = file.type.startsWith('video/');
+    const previewUrl = URL.createObjectURL(file);
+    
+    return (
+      <Card key={index} sx={{ position: 'relative' }}>
+        <Box sx={{ position: 'relative', width: 80, height: 80 }}>
+          {isVideo ? (
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 1
+              }}
+            >
+              <VideoFile sx={{ color: 'white', fontSize: 30 }} />
+            </Box>
+          ) : (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: 4
+              }}
+            />
+          )}
+          <IconButton
+            size="small"
+            onClick={() => removeFile(index)}
+            sx={{
+              position: 'absolute',
+              top: -5,
+              right: -5,
+              backgroundColor: 'error.main',
+              color: 'white',
+              '&:hover': { backgroundColor: 'error.dark' }
+            }}
+          >
+            <Close sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Box>
+        <Typography variant="caption" sx={{ display: 'block', p: 0.5, textAlign: 'center' }}>
+          {file.name.length > 12 ? `${file.name.substring(0, 12)}...` : file.name}
+        </Typography>
+      </Card>
+    );
+  };
+
+  const renderCapsuleMedia = (media) => {
+    const images = media.filter(m => m.media_type === 'image');
+    const videos = media.filter(m => m.media_type === 'video');
+    
+    return (
+      <Box sx={{ mt: 2 }}>
+        {images.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Images ({images.length})
+            </Typography>
+            <ImageList cols={3} gap={8} sx={{ maxHeight: 200 }}>
+              {images.map((image, index) => (
+                <ImageListItem
+                  key={index}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': { opacity: 0.8 }
+                  }}
+                  onClick={() => handleMediaClick(image, media)}
+                >
+                  <img
+                    src={image.media_url}
+                    alt="Capsule media"
+                    style={{
+                      width: '100%',
+                      height: 80,
+                      objectFit: 'cover'
+                    }}
+                  />
+                </ImageListItem>
+              ))}
+            </ImageList>
+          </Box>
+        )}
+        
+        {videos.length > 0 && (
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              Videos ({videos.length})
+            </Typography>
+            <Grid container spacing={1}>
+              {videos.map((video, index) => (
+                <Grid item xs={6} key={index}>
+                  <Card>
+                    <Box sx={{ position: 'relative' }}>
+                      <video
+                        controls
+                        style={{
+                          width: '100%',
+                          height: 120,
+                          objectFit: 'cover'
+                        }}
+                      >
+                        <source src={video.media_url} />
+                        Your browser does not support the video tag.
+                      </video>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        )}
+      </Box>
+    );
   };
 
   const openCapsules = capsules.filter(c => c.is_opened);
@@ -220,7 +431,7 @@ const CapsulesPage = () => {
           </Box>
 
           <Typography variant="body1" color="text.secondary" paragraph>
-            Create time-locked memories and messages for your future self. Set a date and time, and your capsule will only open when that moment arrives.
+            Create time-locked memories with photos and videos for your future self. Set a date and time, and your capsule will only open when that moment arrives.
           </Typography>
 
           {success && (
@@ -284,6 +495,29 @@ const CapsulesPage = () => {
                           <Typography variant="body2" color="text.secondary">
                             Opens on {dayjs(capsule.open_date).format('MMMM D, YYYY at h:mm A')}
                           </Typography>
+                          
+                          {/* Media count indicators */}
+                          {capsule.media && capsule.media.length > 0 && (
+                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                              {capsule.media.filter(m => m.media_type === 'image').length > 0 && (
+                                <Chip
+                                  icon={<ImageIcon />}
+                                  label={capsule.media.filter(m => m.media_type === 'image').length}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                              {capsule.media.filter(m => m.media_type === 'video').length > 0 && (
+                                <Chip
+                                  icon={<VideoFile />}
+                                  label={capsule.media.filter(m => m.media_type === 'video').length}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                            </Box>
+                          )}
+                          
                           <Typography variant="caption" color="text.secondary">
                             Created {dayjs(capsule.created_at).format('MMM D, YYYY')}
                           </Typography>
@@ -339,6 +573,29 @@ const CapsulesPage = () => {
                           <Typography variant="body2" color="text.secondary">
                             Opened on {dayjs(capsule.opened_at).format('MMMM D, YYYY at h:mm A')}
                           </Typography>
+                          
+                          {/* Media count indicators */}
+                          {capsule.media && capsule.media.length > 0 && (
+                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                              {capsule.media.filter(m => m.media_type === 'image').length > 0 && (
+                                <Chip
+                                  icon={<ImageIcon />}
+                                  label={capsule.media.filter(m => m.media_type === 'image').length}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                              {capsule.media.filter(m => m.media_type === 'video').length > 0 && (
+                                <Chip
+                                  icon={<VideoFile />}
+                                  label={capsule.media.filter(m => m.media_type === 'video').length}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              )}
+                            </Box>
+                          )}
+                          
                           <Typography variant="caption" color="text.secondary">
                             Created {dayjs(capsule.created_at).format('MMM D, YYYY')}
                           </Typography>
@@ -353,7 +610,7 @@ const CapsulesPage = () => {
         </Container>
 
         {/* Create Capsule Dialog */}
-        <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
+        <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
           <DialogTitle>Create Memory Capsule</DialogTitle>
           <DialogContent>
             <TextField
@@ -384,25 +641,84 @@ const CapsulesPage = () => {
               minDateTime={dayjs().add(1, 'hour')}
             />
 
+            {/* Media Upload Section */}
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Attach Photos & Videos (Optional)
+              </Typography>
+              
+              <input
+                accept="image/*,video/*"
+                style={{ display: 'none' }}
+                id="media-upload"
+                multiple
+                type="file"
+                onChange={handleFileSelect}
+              />
+              <label htmlFor="media-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                >
+                  Select Photos & Videos (Max 10 files)
+                </Button>
+              </label>
+
+              {selectedFiles.length > 0 && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Selected files ({selectedFiles.length}/10):
+                  </Typography>
+                  <Grid container spacing={1}>
+                    {selectedFiles.map((file, index) => (
+                      <Grid item key={index}>
+                        {renderMediaPreview(file, index)}
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
+
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                • Images: max 10MB each • Videos: max 50MB each
+                <br />
+                • Supported formats: JPG, PNG, GIF, MP4, MOV, AVI
+              </Typography>
+            </Box>
+
+            {uploading && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Creating capsule... {uploadProgress}%
+                </Typography>
+                <LinearProgress variant="determinate" value={uploadProgress} />
+              </Box>
+            )}
+
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
               Your capsule will be locked until the specified date and time.
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setCreateDialogOpen(false)} disabled={uploading}>
+              Cancel
+            </Button>
             <Button 
               onClick={handleCreateCapsule}
               variant="contained"
-              disabled={loading}
+              disabled={uploading}
               startIcon={<Send />}
             >
-              Create Capsule
+              {uploading ? 'Creating...' : 'Create Capsule'}
             </Button>
           </DialogActions>
         </Dialog>
 
         {/* View Capsule Dialog */}
-        <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="sm" fullWidth>
+        <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="md" fullWidth>
           {selectedCapsule && (
             <>
               <DialogTitle>
@@ -418,6 +734,11 @@ const CapsulesPage = () => {
                   {selectedCapsule.message}
                 </Typography>
                 
+                {/* Display media */}
+                {selectedCapsule.media && selectedCapsule.media.length > 0 && (
+                  renderCapsuleMedia(selectedCapsule.media)
+                )}
+                
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
                   <Typography variant="body2" color="text.secondary">
                     <strong>Created:</strong> {dayjs(selectedCapsule.created_at).format('MMMM D, YYYY at h:mm A')}
@@ -425,16 +746,19 @@ const CapsulesPage = () => {
                   <Typography variant="body2" color="text.secondary">
                     <strong>Scheduled to open:</strong> {dayjs(selectedCapsule.open_date).format('MMMM D, YYYY at h:mm A')}
                   </Typography>
-                  {selectedCapsule.opened_at && (
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Actually opened:</strong> {dayjs(selectedCapsule.opened_at).format('MMMM D, YYYY at h:mm A')}
-                    </Typography>
-                  )}
                 </Box>
               </DialogContent>
             </>
           )}
         </Dialog>
+
+        {/* Photo Viewer */}
+        <PhotoViewer
+          open={photoViewerOpen}
+          onClose={() => setPhotoViewerOpen(false)}
+          photos={selectedPhotos}
+          initialIndex={selectedPhotoIndex}
+        />
       </Box>
     </LocalizationProvider>
   );

@@ -1,4 +1,4 @@
-// src/components/common/PhotoViewer.jsx - Photo Modal with Full View & Download
+// src/components/common/PhotoViewer.jsx - Enhanced with Video Support
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -21,7 +21,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Fullscreen,
-  FullscreenExit
+  FullscreenExit,
+  PlayArrow,
+  Pause,
+  VolumeUp,
+  VolumeOff
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 
@@ -34,41 +38,72 @@ const PhotoViewer = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  
+  // Video controls
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [videoRef, setVideoRef] = useState(null);
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
     setZoom(1);
-    setImageLoaded(false);
+    setMediaLoaded(false);
+    setIsPlaying(false);
   }, [initialIndex, open]);
 
   useEffect(() => {
     if (open && photos.length > 0) {
-      setImageLoaded(false);
+      setMediaLoaded(false);
     }
   }, [currentIndex, open]);
 
   const currentPhoto = photos[currentIndex];
+  const isVideo = currentPhoto?.url?.includes('.mp4') || currentPhoto?.url?.includes('.mov') || currentPhoto?.url?.includes('.avi');
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
+      setIsPlaying(false);
     }
   };
 
   const handleNext = () => {
     if (currentIndex < photos.length - 1) {
       setCurrentIndex(currentIndex + 1);
+      setIsPlaying(false);
     }
   };
 
   const handleZoomIn = () => {
-    setZoom(Math.min(zoom * 1.5, 3));
+    if (!isVideo) {
+      setZoom(Math.min(zoom * 1.5, 3));
+    }
   };
 
   const handleZoomOut = () => {
-    setZoom(Math.max(zoom / 1.5, 0.5));
+    if (!isVideo) {
+      setZoom(Math.max(zoom / 1.5, 0.5));
+    }
+  };
+
+  const handleVideoPlay = () => {
+    if (videoRef) {
+      if (isPlaying) {
+        videoRef.pause();
+      } else {
+        videoRef.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleVideoMute = () => {
+    if (videoRef) {
+      videoRef.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
   };
 
   const handleDownload = async () => {
@@ -76,17 +111,18 @@ const PhotoViewer = ({
 
     setLoading(true);
     try {
-      // For Cloudinary URLs, we can get the original by removing transformations
-      const downloadUrl = currentPhoto.url;
-      
-      const response = await fetch(downloadUrl);
+      const response = await fetch(currentPhoto.url);
       const blob = await response.blob();
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${currentPhoto.title || 'photo'}.jpg`;
+      
+      // Determine file extension
+      const fileExtension = isVideo ? '.mp4' : '.jpg';
+      link.download = `${currentPhoto.title || 'media'}${fileExtension}`;
+      
       document.body.appendChild(link);
       link.click();
       
@@ -122,13 +158,19 @@ const PhotoViewer = ({
       case '-':
         handleZoomOut();
         break;
+      case ' ':
+        if (isVideo) {
+          event.preventDefault();
+          handleVideoPlay();
+        }
+        break;
     }
   };
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [open, currentIndex]);
+  }, [open, currentIndex, isVideo, isPlaying]);
 
   if (!currentPhoto) return null;
 
@@ -166,6 +208,13 @@ const PhotoViewer = ({
               sx={{ mt: 0.5, backgroundColor: 'rgba(255,255,255,0.2)' }}
             />
           )}
+          {isVideo && (
+            <Chip
+              label="Video"
+              size="small"
+              sx={{ mt: 0.5, ml: 1, backgroundColor: 'rgba(255,0,0,0.7)' }}
+            />
+          )}
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -181,7 +230,7 @@ const PhotoViewer = ({
         </Box>
       </Box>
 
-      {/* Image Container */}
+      {/* Media Container */}
       <DialogContent
         sx={{
           p: 0,
@@ -195,24 +244,73 @@ const PhotoViewer = ({
           backgroundColor: '#000'
         }}
       >
-        {!imageLoaded && (
+        {!mediaLoaded && (
           <CircularProgress sx={{ color: 'white' }} />
         )}
 
-        <img
-          src={currentPhoto.url}
-          alt={currentPhoto.title}
-          onLoad={() => setImageLoaded(true)}
-          style={{
-            maxWidth: '100%',
-            maxHeight: '100%',
-            transform: `scale(${zoom})`,
-            transition: 'transform 0.3s ease',
-            cursor: zoom > 1 ? 'grab' : 'zoom-in',
-            display: imageLoaded ? 'block' : 'none'
-          }}
-          onClick={zoom === 1 ? handleZoomIn : undefined}
-        />
+        {isVideo ? (
+          <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <video
+              ref={setVideoRef}
+              src={currentPhoto.url}
+              onLoadedData={() => setMediaLoaded(true)}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                display: mediaLoaded ? 'block' : 'none'
+              }}
+              controls={false}
+              muted={isMuted}
+            />
+            
+            {/* Video Controls Overlay */}
+            {mediaLoaded && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 16,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  display: 'flex',
+                  gap: 1,
+                  backgroundColor: 'rgba(0,0,0,0.7)',
+                  borderRadius: 2,
+                  p: 1
+                }}
+              >
+                <IconButton
+                  onClick={handleVideoPlay}
+                  sx={{ color: 'white' }}
+                >
+                  {isPlaying ? <Pause /> : <PlayArrow />}
+                </IconButton>
+                <IconButton
+                  onClick={handleVideoMute}
+                  sx={{ color: 'white' }}
+                >
+                  {isMuted ? <VolumeOff /> : <VolumeUp />}
+                </IconButton>
+              </Box>
+            )}
+          </Box>
+        ) : (
+          <img
+            src={currentPhoto.url}
+            alt={currentPhoto.title}
+            onLoad={() => setMediaLoaded(true)}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              transform: `scale(${zoom})`,
+              transition: 'transform 0.3s ease',
+              cursor: zoom > 1 ? 'grab' : 'zoom-in',
+              display: mediaLoaded ? 'block' : 'none'
+            }}
+            onClick={zoom === 1 ? handleZoomIn : undefined}
+          />
+        )}
 
         {/* Navigation Arrows */}
         {photos.length > 1 && (
@@ -273,30 +371,34 @@ const PhotoViewer = ({
         }}
       >
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton
-            onClick={handleZoomOut}
-            disabled={zoom <= 0.5}
-            sx={{ color: 'white' }}
-          >
-            <ZoomOut />
-          </IconButton>
-          <Typography
-            variant="body2"
-            sx={{
-              alignSelf: 'center',
-              minWidth: 60,
-              textAlign: 'center'
-            }}
-          >
-            {Math.round(zoom * 100)}%
-          </Typography>
-          <IconButton
-            onClick={handleZoomIn}
-            disabled={zoom >= 3}
-            sx={{ color: 'white' }}
-          >
-            <ZoomIn />
-          </IconButton>
+          {!isVideo && (
+            <>
+              <IconButton
+                onClick={handleZoomOut}
+                disabled={zoom <= 0.5}
+                sx={{ color: 'white' }}
+              >
+                <ZoomOut />
+              </IconButton>
+              <Typography
+                variant="body2"
+                sx={{
+                  alignSelf: 'center',
+                  minWidth: 60,
+                  textAlign: 'center'
+                }}
+              >
+                {Math.round(zoom * 100)}%
+              </Typography>
+              <IconButton
+                onClick={handleZoomIn}
+                disabled={zoom >= 3}
+                sx={{ color: 'white' }}
+              >
+                <ZoomIn />
+              </IconButton>
+            </>
+          )}
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1 }}>

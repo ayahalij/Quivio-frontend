@@ -221,31 +221,21 @@ class ApiService {
     return response.data;
   }
 
-  async createCapsule(capsuleData) {
-    const response = await this.api.post('/capsules/', capsuleData);
-    return response.data;
-  }
-
-  async openCapsule(capsuleId) {
-    const response = await this.api.put(`/capsules/${capsuleId}/open`);
-    return response.data;
-  }
-
   async getCapsule(capsuleId) {
     const response = await this.api.get(`/capsules/${capsuleId}`);
     return response.data;
   }
 
-  // Analytics endpoints
-  async getMoodTrends(days = 30) {
-    const response = await this.api.get(`/analytics/mood-trends?days=${days}`);
-    return response.data;
-  }
+    // Analytics endpoints
+    async getMoodTrends(days = 30) {
+      const response = await this.api.get(`/analytics/mood-trends?days=${days}`);
+      return response.data;
+    }
 
-  async getMoodDistribution(days = 30) {
-    const response = await this.api.get(`/analytics/mood-distribution?days=${days}`);
-    return response.data;
-  }
+    async getMoodDistribution(days = 30) {
+      const response = await this.api.get(`/analytics/mood-distribution?days=${days}`);
+      return response.data;
+    }
 
   async getActivitySummary(days = 30) {
     const response = await this.api.get(`/analytics/activity-summary?days=${days}`);
@@ -256,6 +246,40 @@ class ApiService {
     const response = await this.api.get('/analytics/insights');
     return response.data;
   }
+
+  async createCapsuleWithMedia(formData) {
+    const response = await this.api.post('/capsules/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async openCapsule(capsuleId) {
+    const response = await this.api.put(`/capsules/${capsuleId}/open`);
+    return response.data;
+  }
+
+  async addMediaToCapsule(capsuleId, files) {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+    
+    const response = await this.api.post(`/capsules/${capsuleId}/media`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async deleteCapsuleMedia(capsuleId, mediaId) {
+    const response = await this.api.delete(`/capsules/${capsuleId}/media/${mediaId}`);
+    return response.data;
+  }
+
 }
 
 const apiService = new ApiService()
