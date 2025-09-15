@@ -1,4 +1,5 @@
-// src/pages/CapsulesPage.jsx - Enhanced with Media Upload Support
+// Update your src/pages/CapsulesPage.jsx with this enhanced version that supports recipients:
+
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -22,7 +23,10 @@ import {
   IconButton,
   ImageList,
   ImageListItem,
-  LinearProgress
+  LinearProgress,
+  FormControlLabel,
+  Checkbox,
+  Divider
 } from '@mui/material';
 import {
   Add,
@@ -35,7 +39,9 @@ import {
   PlayArrow,
   Image as ImageIcon,
   VideoFile,
-  Delete
+  Delete,
+  Email,
+  PersonAdd
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -58,9 +64,13 @@ const CapsulesPage = () => {
     title: '',
     message: '',
     open_date: dayjs().add(1, 'week'),
-    recipient_email: '',
     is_private: true
   });
+
+  // NEW: Recipient management
+  const [recipientEmails, setRecipientEmails] = useState(['']);
+  const [sendToSelf, setSendToSelf] = useState(true);
+  const [emailErrors, setEmailErrors] = useState({});
 
   // Media upload states
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -93,18 +103,58 @@ const CapsulesPage = () => {
     }
   };
 
+  // NEW: Email validation
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // NEW: Add recipient email field
+  const addRecipientField = () => {
+    if (recipientEmails.length < 30) {
+      setRecipientEmails([...recipientEmails, '']);
+    }
+  };
+
+  // NEW: Remove recipient email field
+  const removeRecipientField = (index) => {
+    if (recipientEmails.length > 1) {
+      const newEmails = recipientEmails.filter((_, i) => i !== index);
+      setRecipientEmails(newEmails);
+      
+      // Clear error for removed field
+      const newErrors = { ...emailErrors };
+      delete newErrors[index];
+      setEmailErrors(newErrors);
+    }
+  };
+
+  // NEW: Update recipient email
+  const updateRecipientEmail = (index, email) => {
+    const newEmails = [...recipientEmails];
+    newEmails[index] = email;
+    setRecipientEmails(newEmails);
+    
+    // Validate email
+    const newErrors = { ...emailErrors };
+    if (email && !validateEmail(email)) {
+      newErrors[index] = 'Invalid email format';
+    } else {
+      delete newErrors[index];
+    }
+    setEmailErrors(newErrors);
+  };
+
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
     const validFiles = [];
     
     for (const file of files) {
-      // Validate file type
       if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
         setError(`${file.name} is not a valid image or video file`);
         continue;
       }
       
-      // Validate file size (50MB for videos, 10MB for images)
       const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
       if (file.size > maxSize) {
         const sizeLimit = file.type.startsWith('video/') ? '50MB' : '10MB';
@@ -115,7 +165,6 @@ const CapsulesPage = () => {
       validFiles.push(file);
     }
     
-    // Limit to 10 files total
     const totalFiles = selectedFiles.length + validFiles.length;
     if (totalFiles > 10) {
       setError('Maximum 10 files allowed per capsule');
@@ -140,41 +189,61 @@ const CapsulesPage = () => {
       return;
     }
 
+    // Validate recipient emails
+    const validEmails = recipientEmails.filter(email => email.trim() && validateEmail(email));
+    const hasInvalidEmails = Object.keys(emailErrors).length > 0;
+    
+    if (hasInvalidEmails) {
+      setError('Please fix invalid email addresses');
+      return;
+    }
+
     setUploading(true);
     setError('');
     setUploadProgress(0);
 
     try {
-      // Create FormData for capsule with media
       const formData = new FormData();
       formData.append('title', capsuleData.title.trim());
       formData.append('message', capsuleData.message.trim());
       formData.append('open_date', capsuleData.open_date.toISOString());
       formData.append('is_private', capsuleData.is_private);
-      if (capsuleData.recipient_email) {
-        formData.append('recipient_email', capsuleData.recipient_email);
+      
+      // NEW: Add recipient emails
+      if (validEmails.length > 0) {
+        formData.append('recipient_emails', validEmails.join(','));
       }
+      formData.append('send_to_self', sendToSelf);
 
       // Add files
       selectedFiles.forEach(file => {
         formData.append('files', file);
       });
 
-      // Simulate progress for better UX
+      // Simulate progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const newCapsule = await ApiService.createCapsuleWithMedia(formData);
+      // Use new endpoint if recipients are specified
+      const newCapsule = validEmails.length > 0 || !sendToSelf
+        ? await ApiService.createCapsuleWithRecipients(formData)
+        : await ApiService.createCapsuleWithMedia(formData);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
 
       setCapsules(prev => [newCapsule, ...prev]);
-      setSuccess('Memory capsule created successfully!');
+      
+      if (validEmails.length > 0 || !sendToSelf) {
+        setSuccess(`Memory capsule created! ${validEmails.length > 0 ? `Will email ${validEmails.length} recipient(s)` : ''} ${sendToSelf ? 'and yourself' : ''} when it opens.`);
+      } else {
+        setSuccess('Memory capsule created successfully!');
+      }
+      
       setCreateDialogOpen(false);
       resetCapsuleForm();
-      setTimeout(() => setSuccess(''), 3000);
+      setTimeout(() => setSuccess(''), 5000);
 
     } catch (error) {
       console.error('Failed to create capsule:', error);
@@ -185,16 +254,47 @@ const CapsulesPage = () => {
     }
   };
 
-  const handleOpenCapsule = async (capsule) => {
+  const resetCapsuleForm = () => {
+    setCapsuleData({
+      title: '',
+      message: '',
+      open_date: dayjs().add(1, 'week'),
+      is_private: true
+    });
+    setSelectedFiles([]);
+    setRecipientEmails(['']);
+    setSendToSelf(true);
+    setEmailErrors({});
+  };
+
+ const handleOpenCapsule = async (capsule) => {
     if (capsule.is_opened) {
       setSelectedCapsule(capsule);
       setViewDialogOpen(true);
       return;
     }
 
-    const openDate = dayjs(capsule.open_date);
-    if (openDate.isAfter(dayjs())) {
-      setError(`This capsule will open on ${openDate.format('MMMM D, YYYY at h:mm A')}`);
+    const now = new Date();
+    const openDate = new Date(capsule.open_date);
+    
+    if (openDate > now) {
+      const diffMs = openDate.getTime() - now.getTime();
+      const minutes = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      
+      let timeRemaining;
+      if (days > 0) {
+        timeRemaining = `${days} day${days > 1 ? 's' : ''}`;
+      } else if (hours > 0) {
+        timeRemaining = `${hours} hour${hours > 1 ? 's' : ''}`;
+      } else if (minutes > 0) {
+        timeRemaining = `${minutes} minute${minutes > 1 ? 's' : ''}`;
+      } else {
+        timeRemaining = 'less than a minute';
+      }
+      
+      setError(`This capsule will open in ${timeRemaining}`);
       return;
     }
 
@@ -207,7 +307,7 @@ const CapsulesPage = () => {
       
       setSelectedCapsule(updatedCapsule);
       setViewDialogOpen(true);
-      setSuccess('Capsule opened!');
+      setSuccess('Capsule opened! Email notifications sent to recipients.');
       setTimeout(() => setSuccess(''), 3000);
 
     } catch (error) {
@@ -232,37 +332,33 @@ const CapsulesPage = () => {
     setPhotoViewerOpen(true);
   };
 
-  const resetCapsuleForm = () => {
-    setCapsuleData({
-      title: '',
-      message: '',
-      open_date: dayjs().add(1, 'week'),
-      recipient_email: '',
-      is_private: true
-    });
-    setSelectedFiles([]);
-  };
-
   const getTimeUntilOpen = (openDate) => {
-    const now = dayjs();
-    const open = dayjs(openDate);
+    const now = new Date();
+    const open = new Date(openDate);
     
-    if (open.isBefore(now)) {
+    console.log('Now:', now.toISOString());
+    console.log('Open date:', open.toISOString());
+    
+    if (open <= now) {
       return 'Ready to open';
     }
     
-    const diff = open.diff(now);
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const diffMs = open.getTime() - now.getTime();
+    const minutes = Math.floor(diffMs / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
     
     if (days > 0) {
       return `${days} day${days > 1 ? 's' : ''} remaining`;
     } else if (hours > 0) {
       return `${hours} hour${hours > 1 ? 's' : ''} remaining`;
+    } else if (minutes > 0) {
+      return `${minutes} minute${minutes > 1 ? 's' : ''} remaining`;
     } else {
       return 'Opening soon';
     }
   };
+
 
   const renderMediaPreview = (file, index) => {
     const isVideo = file.type.startsWith('video/');
@@ -431,7 +527,7 @@ const CapsulesPage = () => {
           </Box>
 
           <Typography variant="body1" color="text.secondary" paragraph>
-            Create time-locked memories with photos and videos for your future self. Set a date and time, and your capsule will only open when that moment arrives.
+            Create time-locked memories with photos and videos for your future self or share them with others. Set a date and time, and your capsule will only open when that moment arrives.
           </Typography>
 
           {success && (
@@ -609,7 +705,7 @@ const CapsulesPage = () => {
           </Grid>
         </Container>
 
-        {/* Create Capsule Dialog */}
+        {/* ENHANCED Create Capsule Dialog with Recipients */}
         <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
           <DialogTitle>Create Memory Capsule</DialogTitle>
           <DialogContent>
@@ -640,6 +736,62 @@ const CapsulesPage = () => {
               sx={{ width: '100%', mt: 2 }}
               minDateTime={dayjs().add(1, 'hour')}
             />
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* NEW: Recipient Section */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Email color="primary" />
+                Email Recipients (Optional)
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Add email addresses to share this capsule with others when it opens.
+              </Typography>
+
+              {recipientEmails.map((email, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label={`Recipient ${index + 1}`}
+                    value={email}
+                    onChange={(e) => updateRecipientEmail(index, e.target.value)}
+                    placeholder="friend@example.com"
+                    error={!!emailErrors[index]}
+                    helperText={emailErrors[index]}
+                  />
+                  {recipientEmails.length > 1 && (
+                    <IconButton onClick={() => removeRecipientField(index)} color="error" size="small">
+                      <Delete />
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
+
+              <Button
+                startIcon={<PersonAdd />}
+                onClick={addRecipientField}
+                disabled={recipientEmails.length >= 30}
+                size="small"
+                sx={{ mt: 1 }}
+              >
+                Add Recipient ({recipientEmails.length}/30)
+              </Button>
+
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={sendToSelf}
+                    onChange={(e) => setSendToSelf(e.target.checked)}
+                  />
+                }
+                label="Send email notification to me when opened"
+                sx={{ mt: 2 }}
+              />
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
 
             {/* Media Upload Section */}
             <Box sx={{ mt: 3 }}>
@@ -699,7 +851,7 @@ const CapsulesPage = () => {
             )}
 
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Your capsule will be locked until the specified date and time.
+              Your capsule will be locked until the specified date and time. Email notifications will be sent to all recipients when it opens.
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -746,6 +898,11 @@ const CapsulesPage = () => {
                   <Typography variant="body2" color="text.secondary">
                     <strong>Scheduled to open:</strong> {dayjs(selectedCapsule.open_date).format('MMMM D, YYYY at h:mm A')}
                   </Typography>
+                  {selectedCapsule.opened_at && (
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Actually opened:</strong> {dayjs(selectedCapsule.opened_at).format('MMMM D, YYYY at h:mm A')}
+                    </Typography>
+                  )}
                 </Box>
               </DialogContent>
             </>

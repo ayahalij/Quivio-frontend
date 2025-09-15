@@ -10,6 +10,7 @@ import LandingPage from './pages/LandingPage';
 import Timeline from './pages/TimelinePage';
 import ProfilePage from './pages/ProfilePage';
 import CapsulesPage from './pages/CapsulesPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const theme = createTheme({
   palette: {
@@ -109,6 +110,9 @@ const App = () => {
             
             {/* Catch all route - MUST BE LAST */}
             <Route path="*" element={<Navigate to="/" replace />} />
+
+            {/* Reset Password Route */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Routes>
         </Router>
       </AuthProvider>

@@ -280,6 +280,35 @@ class ApiService {
     return response.data;
   }
 
+  async createCapsuleWithRecipients(formData) {
+    const response = await this.api.post('/capsules/create-with-recipients', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async forgotPassword(email) {
+    const response = await this.api.post('/auth/forgot-password', {
+      email: email
+    });
+    return response.data;
+  }
+
+  async resetPassword(token, newPassword) {
+    const response = await this.api.post('/auth/reset-password', {
+      token: token,
+      new_password: newPassword
+    });
+    return response.data;
+  }
+
+  async verifyResetToken(token) {
+    const response = await this.api.get(`/auth/verify-reset-token/${token}`);
+    return response.data;
+  }
+
 }
 
 const apiService = new ApiService()

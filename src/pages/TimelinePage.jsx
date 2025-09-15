@@ -134,12 +134,20 @@ const TimelinePage = () => {
   const [capsuleViewerOpen, setCapsuleViewerOpen] = useState(false);
   const [selectedCapsule, setSelectedCapsule] = useState(null);
 
-  // Update URL when tab changes
   const handleTabChange = (event, newValue) => {
-    setCurrentTab(newValue);
-    const newUrl = newValue === 0 ? '/timeline' : `/timeline?tab=${newValue}`;
-    navigate(newUrl, { replace: true });
-  };
+  setCurrentTab(newValue);
+  
+  // Clear day details when switching tabs
+  setSelectedDay(null);
+  
+  // Also clear any other modals that might be open
+  setCapsuleViewerOpen(false);
+  setLocationDialogOpen(false);
+  setPhotoViewerOpen(false);
+  
+  const newUrl = newValue === 0 ? '/timeline' : `/timeline?tab=${newValue}`;
+  navigate(newUrl, { replace: true });
+};
 
   useEffect(() => {
     if (currentTab === 0) {
