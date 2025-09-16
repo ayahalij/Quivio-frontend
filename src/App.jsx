@@ -11,14 +11,15 @@ import Timeline from './pages/TimelinePage';
 import ProfilePage from './pages/ProfilePage';
 import CapsulesPage from './pages/CapsulesPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import QuivioLoader from './components/common/QuivioLoader';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#6366f1', // Indigo
+      main: '#8761a7', // Updated to Quivio purple
     },
     secondary: {
-      main: '#ec4899', // Pink
+      main: '#cdd475', // Updated to Quivio green
     },
   },
 });
@@ -26,22 +27,36 @@ const theme = createTheme({
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  
+ 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <QuivioLoader 
+        variant="spinner" 
+        fullScreen 
+        message="Verifying your access..." 
+        size="large"
+      />
+    );
   }
-  
+ 
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 // Public Route wrapper (redirect to dashboard if already logged in)
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  
+ 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <QuivioLoader 
+        variant="pulsing-circles" 
+        fullScreen 
+        message="Getting ready..." 
+        size="medium"
+      />
+    );
   }
-  
+ 
   return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 
@@ -54,65 +69,63 @@ const App = () => {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
-            <Route 
-              path="/login" 
+            <Route
+              path="/login"
               element={
                 <PublicRoute>
                   <Login />
                 </PublicRoute>
-              } 
+              }
             />
-            <Route 
-              path="/register" 
+            <Route
+              path="/register"
               element={
                 <PublicRoute>
                   <Register />
                 </PublicRoute>
-              } 
+              }
             />
-            
+           
+            {/* Reset Password Route */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+           
             {/* Protected Routes */}
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
-            <Route 
-              path="/timeline" 
+           
+            <Route
+              path="/timeline"
               element={
                 <ProtectedRoute>
                   <Timeline />
                 </ProtectedRoute>
-              } 
+              }
             />
-
-            <Route 
-              path="/profile" 
+            <Route
+              path="/profile"
               element={
                 <ProtectedRoute>
                   <ProfilePage />
                 </ProtectedRoute>
-              } 
+              }
             />
-
-            <Route 
-              path="/capsules" 
+            <Route
+              path="/capsules"
               element={
                 <ProtectedRoute>
                   <CapsulesPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+           
             {/* Catch all route - MUST BE LAST */}
             <Route path="*" element={<Navigate to="/" replace />} />
-
-            {/* Reset Password Route */}
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Routes>
         </Router>
       </AuthProvider>
