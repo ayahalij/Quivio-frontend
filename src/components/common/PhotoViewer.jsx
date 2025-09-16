@@ -1,4 +1,4 @@
-// src/components/common/PhotoViewer.jsx - Enhanced with Video Support
+// src/components/common/PhotoViewer.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,

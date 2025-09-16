@@ -1,4 +1,4 @@
-// src/components/challenges/DailyChallenge.jsx - Styled to match your design
+// src/components/challenges/DailyChallenge.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,

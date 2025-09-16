@@ -1,4 +1,4 @@
-// src/pages/CapsulesPage.jsx - Styled to match Dashboard design
+// src/pages/CapsulesPage.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Container,

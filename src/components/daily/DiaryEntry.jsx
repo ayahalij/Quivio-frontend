@@ -1,4 +1,4 @@
-// src/components/daily/DiaryEntry.jsx - Styled to match your design
+// src/components/daily/DiaryEntry.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,

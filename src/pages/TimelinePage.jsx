@@ -1,4 +1,4 @@
-// src/pages/TimelinePage.js - Complete Integrated Timeline with Calendar, Search & Map
+// src/pages/TimelinePage.js
 import React, { useState, useEffect } from 'react';
 import {
   Container,

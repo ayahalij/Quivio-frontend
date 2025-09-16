@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.jsx - Fixed version
+// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import ApiService from '../services/api';
 

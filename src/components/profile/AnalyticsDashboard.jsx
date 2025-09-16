@@ -1,4 +1,4 @@
-// src/components/profile/AnalyticsDashboard.jsx - Single column layout with consistent styling
+// src/components/profile/AnalyticsDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,

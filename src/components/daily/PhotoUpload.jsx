@@ -1,4 +1,4 @@
-// src/components/daily/PhotoUpload.jsx - Styled to match your design
+// src/components/daily/PhotoUpload.jsx
 import React, { useState } from 'react';
 import {
   Dialog,
