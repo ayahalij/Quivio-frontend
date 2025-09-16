@@ -1,4 +1,4 @@
-// src/components/profile/AnalyticsDashboard.js - Real Data Version
+// src/components/profile/AnalyticsDashboard.jsx - Single column layout with consistent styling
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -35,12 +35,13 @@ import ApiService from '../../services/api';
 import dayjs from 'dayjs';
 
 const MOOD_COLORS = {
-  1: '#f44336', // Very Sad - Red
-  2: '#ff9800', // Sad - Orange  
-  3: '#9e9e9e', // Neutral - Grey
-  4: '#4caf50', // Happy - Green
-  5: '#2196f3'  // Very Happy - Blue
+  1: '#ff6b6b',  // Red
+  2: '#ffa726',  // Orange
+  3: '#42a5f5',  // Blue (Neutral)
+  4: '#8cd38fff',  // Green
+  5: '#47a14aff'   // Darker green
 };
+
 
 const MOOD_LABELS = {
   1: 'Very Sad',
@@ -153,257 +154,442 @@ const AnalyticsDashboard = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: '#8761a7' }} />
       </Box>
     );
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
+      {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">Analytics Dashboard</Typography>
+        <Typography 
+          variant="h5"
+          sx={{ 
+            fontFamily: '"Kalam", cursive',
+            color: '#8761a7',
+            fontWeight: 600,
+            fontSize: '1.5rem'
+          }}
+        >
+          Analytics Dashboard
+        </Typography>
         <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Time Range</InputLabel>
+          <InputLabel sx={{ fontFamily: '"Kalam", cursive', color: '#8761a7' }}>
+            Time Range
+          </InputLabel>
           <Select
             value={timeRange}
             label="Time Range"
             onChange={(e) => setTimeRange(e.target.value)}
+            sx={{
+              fontFamily: '"Kalam", cursive',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#8761a7'
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#8761a7'
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#8761a7'
+              }
+            }}
           >
-            <MenuItem value="7">Last 7 days</MenuItem>
-            <MenuItem value="30">Last 30 days</MenuItem>
-            <MenuItem value="90">Last 3 months</MenuItem>
+            <MenuItem value="7" sx={{ fontFamily: '"Kalam", cursive' }}>Last 7 days</MenuItem>
+            <MenuItem value="30" sx={{ fontFamily: '"Kalam", cursive' }}>Last 30 days</MenuItem>
+            <MenuItem value="90" sx={{ fontFamily: '"Kalam", cursive' }}>Last 3 months</MenuItem>
           </Select>
         </FormControl>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 3,
+            backgroundColor: '#fffbef',
+            color: '#8761a7',
+            border: '2px solid #8761a7',
+            borderRadius: 3,
+            fontFamily: '"Kalam", cursive'
+          }}
+        >
           {error}
         </Alert>
       )}
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Total Entries
-                  </Typography>
-                  <Typography variant="h4">
-                    {stats?.total_entries || 0}
-                  </Typography>
-                </Box>
-                <Edit color="primary" sx={{ fontSize: 40 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Current Streak
-                  </Typography>
-                  <Typography variant="h4">
-                    {stats?.current_streak || 0}
-                  </Typography>
-                </Box>
-                <Star color="warning" sx={{ fontSize: 40 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Mood Trend
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {moodTrend.trend === 'improving' ? (
-                      <TrendingUp color="success" />
-                    ) : moodTrend.trend === 'declining' ? (
-                      <TrendingDown color="error" />
-                    ) : (
-                      <Mood color="action" />
-                    )}
-                    <Typography variant="h6">
-                      {moodTrend.trend}
+      {/* Summary Cards Row */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography 
+            variant="h6" 
+            gutterBottom
+            sx={{ 
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+              fontWeight: 600,
+              mb: 3
+            }}
+          >
+            Summary Statistics
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ 
+                p: 2, 
+                textAlign: 'center',
+                backgroundColor: '#dce291',
+                border: '2px solid #8761a7',
+                borderRadius: 2
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography 
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 600
+                      }} 
+                      gutterBottom
+                    >
+                      Total Entries
+                    </Typography>
+                    <Typography 
+                      variant="h4"
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 700
+                      }}
+                    >
+                      {stats?.total_entries || 0}
                     </Typography>
                   </Box>
+                  <Edit sx={{ color: '#8761a7', fontSize: 40 }} />
                 </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+              </Paper>
+            </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Challenges Done
-                  </Typography>
-                  <Typography variant="h4">
-                    {stats?.total_challenges_completed || 0}
-                  </Typography>
-                </Box>
-                <Box sx={{ 
-                  width: 40, 
-                  height: 40, 
-                  borderRadius: '50%', 
-                  bgcolor: 'success.main', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center' 
-                }}>
-                  <Typography variant="h6" color="white">✓</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Charts */}
-      <Grid container spacing={3}>
-        {/* Mood Trend Line Chart */}
-        <Grid item xs={12} lg={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Mood Trends Over Time
-              </Typography>
-              {moodTrends.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={moodTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis 
-                      domain={[1, 5]}
-                      tickFormatter={(value) => MOOD_LABELS[value]}
-                    />
-                    <Tooltip formatter={formatTooltip} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="mood" 
-                      stroke="#2196f3" 
-                      strokeWidth={3}
-                      dot={{ fill: '#2196f3', strokeWidth: 2, r: 4 }}
-                      connectNulls={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography color="text.secondary">
-                    No mood data available for the selected time range
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Mood Distribution Pie Chart */}
-        <Grid item xs={12} lg={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Mood Distribution
-              </Typography>
-              {moodDistribution.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={moodDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ 
+                p: 2, 
+                textAlign: 'center',
+                backgroundColor: '#dce291',
+                border: '2px solid #8761a7',
+                borderRadius: 2
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography 
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 600
+                      }} 
+                      gutterBottom
                     >
-                      {moodDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography color="text.secondary">
-                    No mood data available for the selected time range
-                  </Typography>
+                      Current Streak
+                    </Typography>
+                    <Typography 
+                      variant="h4"
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 700
+                      }}
+                    >
+                      {stats?.current_streak || 0}
+                    </Typography>
+                  </Box>
+                  <Star sx={{ color: '#8761a7', fontSize: 40 }} />
                 </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+              </Paper>
+            </Grid>
 
-        {/* Activity Bar Chart */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Daily Activity (Last 14 Days with Activity)
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ 
+                p: 2, 
+                textAlign: 'center',
+                backgroundColor: '#dce291',
+                border: '2px solid #8761a7',
+                borderRadius: 2
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography 
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 600
+                      }} 
+                      gutterBottom
+                    >
+                      Mood Trend
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {moodTrend.trend === 'improving' ? (
+                        <TrendingUp sx={{ color: '#4caf50' }} />
+                      ) : moodTrend.trend === 'declining' ? (
+                        <TrendingDown sx={{ color: '#f44336' }} />
+                      ) : (
+                        <Mood sx={{ color: '#8761a7' }} />
+                      )}
+                      <Typography 
+                        variant="h6"
+                        sx={{ 
+                          color: '#8761a7',
+                          fontFamily: '"Kalam", cursive',
+                          fontWeight: 600
+                        }}
+                      >
+                        {moodTrend.trend}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ 
+                p: 2, 
+                textAlign: 'center',
+                backgroundColor: '#dce291',
+                border: '2px solid #8761a7',
+                borderRadius: 2
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography 
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 600
+                      }} 
+                      gutterBottom
+                    >
+                      Challenges Done
+                    </Typography>
+                    <Typography 
+                      variant="h4"
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 700
+                      }}
+                    >
+                      {stats?.total_challenges_completed || 0}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: '50%', 
+                    bgcolor: '#8761a7', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}>
+                    <Typography variant="h6" color="white">✓</Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* Mood Trend Line Chart */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography 
+            variant="h6" 
+            gutterBottom
+            sx={{ 
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+              fontWeight: 600
+            }}
+          >
+            Mood Trends Over Time
+          </Typography>
+          {moodTrends.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={moodTrends}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontFamily: '"Kalam", cursive', fill: '#8761a7' }}
+                />
+                <YAxis 
+                  domain={[1, 5]}
+                  tickFormatter={(value) => MOOD_LABELS[value]}
+                  tick={{ fontFamily: '"Kalam", cursive', fill: '#8761a7' }}
+                />
+                <Tooltip formatter={formatTooltip} />
+                <Line 
+                  type="monotone" 
+                  dataKey="mood" 
+                  stroke="#8761a7" 
+                  strokeWidth={3}
+                  dot={{ fill: '#8761a7', strokeWidth: 2, r: 4 }}
+                  connectNulls={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography 
+                sx={{ 
+                  color: '#8761a7',
+                  fontFamily: '"Kalam", cursive'
+                }}
+              >
+                No mood data available for the selected time range
               </Typography>
-              {activityData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={activityData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="entries" fill="#2196f3" name="Diary Entries" />
-                    <Bar dataKey="challenges" fill="#4caf50" name="Challenges" />
-                    <Bar dataKey="words" fill="#ff9800" name="Words Written" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography color="text.secondary">
-                    No activity data available for the selected time range
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Real Insights */}
+      {/* Mood Distribution Pie Chart */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography 
+            variant="h6" 
+            gutterBottom
+            sx={{ 
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+              fontWeight: 600
+            }}
+          >
+            Mood Distribution
+          </Typography>
+          {moodDistribution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={400}>
+              <PieChart>
+                <Pie
+                  data={moodDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {moodDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography 
+                sx={{ 
+                  color: '#8761a7',
+                  fontFamily: '"Kalam", cursive'
+                }}
+              >
+                No mood data available for the selected time range
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Activity Bar Chart */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography 
+            variant="h6" 
+            gutterBottom
+            sx={{ 
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+              fontWeight: 600
+            }}
+          >
+            Daily Activity (Last 14 Days with Activity)
+          </Typography>
+          {activityData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={activityData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontFamily: '"Kalam", cursive', fill: '#8761a7' }}
+                />
+                <YAxis 
+                  tick={{ fontFamily: '"Kalam", cursive', fill: '#8761a7' }}
+                />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="entries" fill="#8761a7" name="Diary Entries" />
+                <Bar dataKey="challenges" fill="#cdd475" name="Challenges" />
+                <Bar dataKey="words" fill="#aecaf4ff" name="Words Written" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography 
+                sx={{ 
+                  color: '#8761a7',
+                  fontFamily: '"Kalam", cursive'
+                }}
+              >
+                No activity data available for the selected time range
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Personal Insights */}
       {insights.length > 0 && (
-        <Card sx={{ mt: 3 }}>
+        <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{ 
+                fontFamily: '"Kalam", cursive',
+                color: '#8761a7',
+                fontWeight: 600
+              }}
+            >
               Personal Insights
             </Typography>
             <Grid container spacing={2}>
               {insights.map((insight, index) => (
                 <Grid item xs={12} md={6} key={index}>
                   <Paper sx={{ 
-                    p: 2, 
-                    bgcolor: insight.type === 'mood_trend' ? 'primary.light' : 'success.light',
-                    color: insight.type === 'mood_trend' ? 'primary.contrastText' : 'success.contrastText'
+                    p: 3, 
+                    backgroundColor: '#dce291',
+                    border: '2px solid #8761a7',
+                    borderRadius: 2
                   }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                    <Typography 
+                      variant="subtitle2" 
+                      gutterBottom
+                      sx={{ 
+                        fontFamily: '"Kalam", cursive',
+                        color: '#8761a7',
+                        fontWeight: 600
+                      }}
+                    >
                       {insight.title}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography 
+                      variant="body2"
+                      sx={{ 
+                        fontFamily: '"Kalam", cursive',
+                        color: '#8761a7'
+                      }}
+                    >
                       {insight.description}
                     </Typography>
                   </Paper>

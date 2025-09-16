@@ -1,7 +1,7 @@
+// src/components/challenges/DailyChallenge.jsx - Styled to match your design
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -21,7 +21,9 @@ import {
   CheckCircle, 
   CloudUpload, 
   Close, 
-  PhotoCamera 
+  PhotoCamera,
+  Assignment,
+  Star
 } from '@mui/icons-material';
 import ApiService from '../../services/api';
 
@@ -40,7 +42,6 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
   useEffect(() => {
     if (open) {
       fetchDailyChallenge();
-      // Reset photo states when dialog opens
       resetPhotoStates();
     }
   }, [open]);
@@ -65,7 +66,6 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
       setChallengeData(result);
     } catch (error) {
       console.error('Failed to fetch daily challenge:', error);
-      console.error('Error details:', error.response?.data);
       setError(error.response?.data?.detail || 'Failed to load today\'s challenge')
     } finally {
       setLoading(false);
@@ -75,22 +75,16 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setError('Please select an image file');
         return;
       }
-
-      // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
         setError('File size must be less than 10MB');
         return;
       }
-
       setSelectedFile(file);
       setError(null);
-
-      // Create preview URL
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
@@ -106,16 +100,11 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
     setError(null);
 
     try {
-      console.log('Completing challenge ID:', challengeData.challenge.id);
-      
       const result = await ApiService.completeChallenge(challengeData.challenge.id, {
         is_completed: true,
         photo_url: null
       });
       
-      console.log('Challenge completion result:', result);
-      
-      // Update the local state to show completion
       setChallengeData(prev => ({
         ...prev,
         user_challenge: {
@@ -129,8 +118,6 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
       
     } catch (error) {
       console.error('Failed to complete challenge:', error);
-      console.error('Error response:', error.response?.data);
-      
       let errorMessage = 'Failed to mark challenge as complete';
       if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
@@ -156,13 +143,8 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
     setError(null);
 
     try {
-      console.log('Completing challenge with photo, ID:', challengeData.challenge.id);
-      
       const result = await ApiService.completeChallengeWithPhoto(challengeData.challenge.id, selectedFile);
       
-      console.log('Challenge completion with photo result:', result);
-      
-      // Update the local state to show completion
       setChallengeData(prev => ({
         ...prev,
         user_challenge: {
@@ -178,8 +160,6 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
       
     } catch (error) {
       console.error('Failed to complete challenge with photo:', error);
-      console.error('Error response:', error.response?.data);
-      
       let errorMessage = 'Failed to upload photo and complete challenge';
       if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
@@ -194,10 +174,10 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty?.toLowerCase()) {
-      case 'easy': return 'success';
-      case 'medium': return 'warning';
-      case 'hard': return 'error';
-      default: return 'primary';
+      case 'easy': return '#4caf50';
+      case 'medium': return '#ff9800';
+      case 'hard': return '#f44336';
+      default: return '#2196f3';
     }
   };
 
@@ -207,68 +187,161 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
-          <CameraAlt color="primary" />
-          Today's Photography Challenge
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: '#fffefb',
+          border: '3px solid #8761a7',
+          borderRadius: 4,
+          fontFamily: '"Kalam", cursive'
+        }
+      }}
+    >
+      <DialogContent sx={{ p: 4 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Assignment sx={{ color: '#8761a7', fontSize: 32 }} />
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontFamily: '"Kalam", cursive',
+                color: '#8761a7',
+                fontWeight: 600
+              }}
+            >
+              Today's Photography Challenge
+            </Typography>
+          </Box>
+          <IconButton onClick={handleClose} sx={{ color: '#8761a7' }}>
+            <Close />
+          </IconButton>
         </Box>
-      </DialogTitle>
-      
-      <DialogContent>
+
+        {/* Loading State */}
         {loading && (
           <Box display="flex" justifyContent="center" p={4}>
-            <CircularProgress />
+            <CircularProgress sx={{ color: '#8761a7' }} />
+            <Typography sx={{ ml: 2, fontFamily: '"Kalam", cursive', color: '#8761a7' }}>
+              Loading challenge...
+            </Typography>
           </Box>
         )}
 
+        {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              backgroundColor: '#ffe6e6',
+              color: '#8761a7',
+              border: '2px solid #8761a7',
+              borderRadius: 2,
+              fontFamily: '"Kalam", cursive'
+            }}
+          >
             {error}
           </Alert>
         )}
 
+        {/* Upload Progress */}
         {uploading && (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography 
+              variant="body2" 
+              gutterBottom
+              sx={{ fontFamily: '"Kalam", cursive', color: '#8761a7' }}
+            >
               Uploading photo and completing challenge...
             </Typography>
-            <LinearProgress />
+            <LinearProgress 
+              sx={{
+                backgroundColor: '#dce291',
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: '#8761a7'
+                }
+              }}
+            />
           </Box>
         )}
 
+        {/* Challenge Content */}
         {challengeData && !loading && (
           <>
-            <Card variant="outlined" sx={{ mb: 2 }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+            {/* Challenge Card */}
+            <Card sx={{ 
+              mb: 3,
+              backgroundColor: '#fffbef',
+              border: '2px solid #8761a7',
+              borderRadius: 3
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                   <Chip 
                     label={challengeData.challenge.difficulty_level} 
-                    color={getDifficultyColor(challengeData.challenge.difficulty_level)}
-                    size="small"
+                    sx={{
+                      backgroundColor: getDifficultyColor(challengeData.challenge.difficulty_level),
+                      color: 'white',
+                      fontFamily: '"Kalam", cursive',
+                      fontWeight: 600
+                    }}
                   />
                   {challengeData.user_challenge?.is_completed && (
                     <Chip 
                       icon={<CheckCircle />}
                       label="Completed" 
-                      color="success" 
-                      size="small"
+                      sx={{
+                        backgroundColor: '#4caf50',
+                        color: 'white',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 600
+                      }}
                     />
                   )}
                 </Box>
 
-                <Typography variant="h6" gutterBottom>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ 
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    fontWeight: 600,
+                    mb: 2
+                  }}
+                >
                   {challengeData.challenge.challenge_text}
                 </Typography>
 
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    mb: 2,
+                    lineHeight: 1.6
+                  }}
+                >
                   This challenge is based on your current mood level. Take your time and be creative!
                 </Typography>
 
                 {challengeData.user_challenge?.photo_url && (
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="primary" gutterBottom>
-                      Challenge Photo:
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontFamily: '"Kalam", cursive',
+                        color: '#8761a7',
+                        fontWeight: 600,
+                        mb: 1
+                      }}
+                    >
+                      Your Challenge Photo:
                     </Typography>
                     <img
                       src={challengeData.user_challenge.photo_url}
@@ -279,7 +352,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                         maxHeight: 200,
                         objectFit: 'contain',
                         borderRadius: 8,
-                        border: '1px solid #ddd'
+                        border: '2px solid #8761a7'
                       }}
                     />
                   </Box>
@@ -287,40 +360,79 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
               </CardContent>
             </Card>
 
-            {/* Photo Upload Section */}
-            {challengeData.can_complete && 
-             !challengeData.user_challenge?.is_completed && (
+            {/* Completion Section */}
+            {challengeData.can_complete && !challengeData.user_challenge?.is_completed && (
               <>
-                <Divider sx={{ my: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Complete Challenge
-                  </Typography>
-                </Divider>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    fontWeight: 600,
+                    mb: 2,
+                    textAlign: 'center'
+                  }}
+                >
+                  Complete Your Challenge
+                </Typography>
 
                 {!uploadMode ? (
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
                     <Button
-                      variant="outlined"
+                      variant="contained"
                       startIcon={<PhotoCamera />}
                       onClick={() => setUploadMode(true)}
-                      fullWidth
+                      sx={{
+                        backgroundColor: '#cdd475',
+                        color: '#8761a7',
+                        border: '2px solid #8761a7',
+                        borderRadius: 3,
+                        fontFamily: '"Kalam", cursive',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        py: 1.5,
+                        '&:hover': {
+                          backgroundColor: '#dce291',
+                        }
+                      }}
                     >
-                      Upload Photo
+                      Upload Photo & Complete
                     </Button>
                     <Button
                       variant="outlined"
                       onClick={handleCompleteWithoutPhoto}
                       disabled={completing}
-                      fullWidth
+                      sx={{
+                        color: '#8761a7',
+                        borderColor: '#8761a7',
+                        borderWidth: 2,
+                        borderRadius: 3,
+                        fontFamily: '"Kalam", cursive',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        py: 1.5,
+                        '&:hover': {
+                          borderColor: '#8761a7',
+                          borderWidth: 2,
+                          backgroundColor: '#8761a720',
+                        }
+                      }}
                     >
                       {completing ? 'Completing...' : 'Complete Without Photo'}
                     </Button>
                   </Box>
                 ) : (
-                  <Card variant="outlined" sx={{ mb: 2 }}>
+                  <Card sx={{ 
+                    mb: 2,
+                    backgroundColor: '#fffbef',
+                    border: '2px solid #8761a7',
+                    borderRadius: 3
+                  }}>
                     <CardContent>
                       {!selectedFile ? (
-                        <Box sx={{ textAlign: 'center', py: 2 }}>
+                        <Box sx={{ textAlign: 'center', py: 3 }}>
                           <input
                             accept="image/*"
                             style={{ display: 'none' }}
@@ -329,23 +441,35 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                             onChange={handleFileSelect}
                           />
                           <label htmlFor="challenge-photo-input">
-                            <IconButton
-                              color="primary"
-                              component="span"
-                              sx={{ mb: 1 }}
-                            >
-                              <CloudUpload sx={{ fontSize: 40 }} />
-                            </IconButton>
-                          </label>
-                          
-                          <Typography variant="body2" gutterBottom>
-                            Select a photo to complete the challenge
-                          </Typography>
-                          
-                          <label htmlFor="challenge-photo-input">
-                            <Button variant="contained" component="span" size="small">
-                              Choose Photo
-                            </Button>
+                            <Box sx={{ cursor: 'pointer' }}>
+                              <CloudUpload sx={{ 
+                                fontSize: 48, 
+                                color: '#8761a7', 
+                                mb: 2
+                              }} />
+                              
+                              <Typography 
+                                variant="body1" 
+                                gutterBottom
+                                sx={{ 
+                                  fontFamily: '"Kalam", cursive',
+                                  color: '#8761a7',
+                                  fontWeight: 600
+                                }}
+                              >
+                                Click to select your challenge photo
+                              </Typography>
+                              
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  fontFamily: '"Kalam", cursive',
+                                  color: '#8761a7'
+                                }}
+                              >
+                                Max 10MB • JPG, PNG, GIF
+                              </Typography>
+                            </Box>
                           </label>
                         </Box>
                       ) : (
@@ -367,10 +491,10 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                                 position: 'absolute',
                                 top: 4,
                                 right: 4,
-                                backgroundColor: 'rgba(0,0,0,0.7)',
+                                backgroundColor: '#8761a7',
                                 color: 'white',
                                 '&:hover': {
-                                  backgroundColor: 'rgba(0,0,0,0.9)'
+                                  backgroundColor: '#9e7ebf'
                                 }
                               }}
                               onClick={() => {
@@ -383,12 +507,20 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                             </IconButton>
                           </Box>
                           
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            File: {selectedFile.name}
+                          <Typography 
+                            variant="body2" 
+                            gutterBottom
+                            sx={{ fontFamily: '"Kalam", cursive', color: '#8761a7' }}
+                          >
+                            📁 {selectedFile.name}
                           </Typography>
                           
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          <Typography 
+                            variant="body2" 
+                            gutterBottom
+                            sx={{ fontFamily: '"Kalam", cursive', color: '#8761a7' }}
+                          >
+                            📏 Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                           </Typography>
                           
                           <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
@@ -396,15 +528,42 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                               variant="contained"
                               onClick={handleCompleteWithPhoto}
                               disabled={uploading}
-                              startIcon={uploading ? <CircularProgress size={16} /> : <CloudUpload />}
-                              fullWidth
+                              startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <CloudUpload />}
+                              sx={{
+                                flex: 1,
+                                backgroundColor: '#6366f1',
+                                color: 'white',
+                                borderRadius: 3,
+                                fontFamily: '"Kalam", cursive',
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                textTransform: 'none',
+                                py: 1.5,
+                                '&:hover': {
+                                  backgroundColor: '#5856eb',
+                                }
+                              }}
                             >
-                              {uploading ? 'Uploading...' : 'Complete with Photo'}
+                              {uploading ? 'Uploading...' : 'Complete Challenge'}
                             </Button>
                             <Button
                               variant="outlined"
                               onClick={() => setUploadMode(false)}
                               disabled={uploading}
+                              sx={{
+                                color: '#8761a7',
+                                borderColor: '#8761a7',
+                                borderWidth: 2,
+                                borderRadius: 3,
+                                fontFamily: '"Kalam", cursive',
+                                fontWeight: 600,
+                                textTransform: 'none',
+                                '&:hover': {
+                                  borderColor: '#8761a7',
+                                  borderWidth: 2,
+                                  backgroundColor: '#8761a720',
+                                }
+                              }}
                             >
                               Cancel
                             </Button>
@@ -416,9 +575,24 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                 )}
 
                 {!uploadMode && (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                    Upload a photo to show your creative interpretation of the challenge, or simply mark it complete without a photo.
-                  </Typography>
+                  <Box sx={{ 
+                    backgroundColor: '#dce291', 
+                    p: 2, 
+                    borderRadius: 2, 
+                    border: '2px solid #8761a7'
+                  }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        fontFamily: '"Kalam", cursive',
+                        color: '#8761a7',
+                        textAlign: 'center',
+                        fontStyle: 'italic'
+                      }}
+                    >
+                      💡 Upload a photo to show your creative interpretation, or simply mark the challenge as complete!
+                    </Typography>
+                  </Box>
                 )}
               </>
             )}
@@ -426,11 +600,31 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
         )}
       </DialogContent>
       
-      <DialogActions>
-        <Button onClick={handleClose} disabled={uploading || completing}>
-          Close
+      <DialogActions sx={{ p: 3, pt: 0 }}>
+        <Button 
+          onClick={handleClose} 
+          disabled={uploading || completing}
+          variant="outlined"
+          sx={{
+            color: '#8761a7',
+            borderColor: '#8761a7',
+            borderWidth: 2,
+            borderRadius: 3,
+            fontFamily: '"Kalam", cursive',
+            fontSize: '1rem',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 3,
+            py: 1,
+            '&:hover': {
+              borderColor: '#8761a7',
+              borderWidth: 2,
+              backgroundColor: '#8761a720',
+            }
+          }}
+        >
+          CLOSE
         </Button>
-        {/* Action buttons are now in the content section for better UX */}
       </DialogActions>
     </Dialog>
   );

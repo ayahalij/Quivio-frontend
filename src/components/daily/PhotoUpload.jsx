@@ -1,8 +1,7 @@
-// src/components/daily/PhotoUpload.jsx - Fixed to actually upload
+// src/components/daily/PhotoUpload.jsx - Styled to match your design
 import React, { useState } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -18,7 +17,7 @@ import {
   Checkbox,
   CircularProgress
 } from '@mui/material';
-import { CloudUpload, Close, PhotoCamera, LocationOn } from '@mui/icons-material';
+import { CloudUpload, Close, PhotoCamera, LocationOn, Image } from '@mui/icons-material';
 import ApiService from '../../services/api';
 
 const PhotoUpload = ({ open, onClose, onSuccess }) => {
@@ -159,33 +158,97 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
-          <PhotoCamera color="primary" />
-          Upload Photo Memory
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: '#fffefb',
+          border: '3px solid #8761a7',
+          borderRadius: 4,
+          fontFamily: '"Kalam", cursive'
+        }
+      }}
+    >
+      <DialogContent sx={{ p: 4 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PhotoCamera sx={{ color: '#8761a7', fontSize: 32 }} />
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontFamily: '"Kalam", cursive',
+                color: '#8761a7',
+                fontWeight: 600
+              }}
+            >
+              Upload Photo Memory
+            </Typography>
+          </Box>
+          <IconButton onClick={handleClose} sx={{ color: '#8761a7' }}>
+            <Close />
+          </IconButton>
         </Box>
-      </DialogTitle>
-      
-      <DialogContent>
+
+        {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              backgroundColor: '#ffe6e6',
+              color: '#8761a7',
+              border: '2px solid #8761a7',
+              borderRadius: 2,
+              fontFamily: '"Kalam", cursive'
+            }}
+          >
             {error}
           </Alert>
         )}
 
+        {/* Upload Progress */}
         {uploading && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>
-              Uploading photo...
+          <Box sx={{ mb: 3 }}>
+            <Typography 
+              variant="body2" 
+              gutterBottom
+              sx={{ 
+                fontFamily: '"Kalam", cursive',
+                color: '#8761a7',
+                fontWeight: 500
+              }}
+            >
+              Uploading your photo memory...
             </Typography>
-            <LinearProgress />
+            <LinearProgress 
+              sx={{
+                backgroundColor: '#dce291',
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: '#8761a7'
+                }
+              }}
+            />
           </Box>
         )}
 
         {/* File Upload Area */}
         {!selectedFile ? (
-          <Card variant="outlined" sx={{ mb: 2 }}>
+          <Card sx={{ 
+            mb: 3,
+            backgroundColor: '#dce291',
+            border: '2px dashed #8761a7',
+            borderRadius: 3,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              backgroundColor: '#cdd475',
+              transform: 'scale(1.02)',
+            }
+          }}>
             <CardContent sx={{ textAlign: 'center', py: 4 }}>
               <input
                 accept="image/*"
@@ -193,36 +256,65 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
                 id="photo-upload-input"
                 type="file"
                 onChange={handleFileSelect}
+                disabled={uploading}
               />
               <label htmlFor="photo-upload-input">
-                <IconButton
-                  color="primary"
-                  aria-label="upload picture"
-                  component="span"
-                  sx={{ mb: 2 }}
-                >
-                  <CloudUpload sx={{ fontSize: 48 }} />
-                </IconButton>
-              </label>
-              
-              <Typography variant="h6" gutterBottom>
-                Choose a photo to upload
-              </Typography>
-              
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Select an image from your device (max 10MB)
-              </Typography>
-              
-              <label htmlFor="photo-upload-input">
-                <Button variant="contained" component="span">
-                  Select Photo
-                </Button>
+                <Box sx={{ cursor: 'pointer' }}>
+                  <CloudUpload sx={{ 
+                    fontSize: 64, 
+                    color: '#8761a7', 
+                    mb: 2,
+                    transition: 'transform 0.3s ease',
+                    '&:hover': {
+                      transform: 'scale(1.1)'
+                    }
+                  }} />
+                  
+                  <Typography 
+                    variant="h6" 
+                    gutterBottom
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7',
+                      fontWeight: 600
+                    }}
+                  >
+                    Choose a photo to upload
+                  </Typography>
+                  
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7',
+                      mb: 2
+                    }}
+                  >
+                    Click here or drag and drop an image (max 10MB)
+                  </Typography>
+                  
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7',
+                      fontStyle: 'italic'
+                    }}
+                  >
+                    JPG, PNG, GIF supported
+                  </Typography>
+                </Box>
               </label>
             </CardContent>
           </Card>
         ) : (
           /* Photo Preview */
-          <Card variant="outlined" sx={{ mb: 2 }}>
+          <Card sx={{ 
+            mb: 3,
+            backgroundColor: '#fffbef',
+            border: '2px solid #8761a7',
+            borderRadius: 3
+          }}>
             <Box sx={{ position: 'relative' }}>
               <img
                 src={previewUrl}
@@ -231,7 +323,8 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
                   width: '100%',
                   height: 'auto',
                   maxHeight: 300,
-                  objectFit: 'contain'
+                  objectFit: 'contain',
+                  borderRadius: '8px 8px 0 0'
                 }}
               />
               <IconButton
@@ -239,10 +332,10 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
                   position: 'absolute',
                   top: 8,
                   right: 8,
-                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  backgroundColor: '#8761a7',
                   color: 'white',
                   '&:hover': {
-                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    backgroundColor: '#9e7ebf',
                   }
                 }}
                 onClick={() => {
@@ -254,12 +347,25 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
                 <Close />
               </IconButton>
             </Box>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary">
-                File: {selectedFile.name}
+            <CardContent sx={{ backgroundColor: '#fffbef' }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  fontWeight: 500
+                }}
+              >
+                📁 {selectedFile.name}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7'
+                }}
+              >
+                📏 Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
               </Typography>
             </CardContent>
           </Card>
@@ -275,27 +381,100 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
           disabled={uploading}
           inputProps={{ maxLength: 255 }}
           helperText={`${title.length}/255 characters`}
-          sx={{ mb: 2 }}
+          sx={{
+            mb: 3,
+            '& .MuiOutlinedInput-root': {
+              fontFamily: '"Kalam", cursive',
+              backgroundColor: '#fffbef',
+              borderRadius: 2,
+              '& fieldset': {
+                borderColor: '#8761a7',
+                borderWidth: 2,
+              },
+              '&:hover fieldset': {
+                borderColor: '#8761a7',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#8761a7',
+              },
+            },
+            '& .MuiInputLabel-root': {
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+            },
+            '& .MuiFormHelperText-root': {
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+            },
+            '& .MuiInputBase-input': {
+              fontFamily: '"Kalam", cursive',
+              color: '#333',
+            },
+            '& .MuiInputBase-input::placeholder': {
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+              opacity: 0.7,
+            }
+          }}
         />
 
         {/* Location Options */}
-        <Card variant="outlined" sx={{ mb: 2 }}>
+        <Card sx={{ 
+          mb: 3,
+          backgroundColor: '#fffbef',
+          border: '2px solid #8761a7',
+          borderRadius: 3
+        }}>
           <CardContent>
-            <Typography variant="subtitle2" gutterBottom>
-              Location Options
+            <Typography 
+              variant="subtitle2" 
+              gutterBottom
+              sx={{ 
+                fontFamily: '"Kalam", cursive',
+                color: '#8761a7',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              <LocationOn /> Location Options
             </Typography>
             
             {!location ? (
               <Box>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography 
+                  variant="body2" 
+                  paragraph
+                  sx={{ 
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    mb: 2
+                  }}
+                >
                   Add location data to see your photos on the map view
                 </Typography>
                 <Button
-                  variant="outlined"
-                  startIcon={gettingLocation ? <CircularProgress size={16} /> : <LocationOn />}
+                  variant="contained"
+                  startIcon={gettingLocation ? <CircularProgress size={16} color="inherit" /> : <LocationOn />}
                   onClick={getLocation}
                   disabled={gettingLocation || uploading}
-                  size="small"
+                  sx={{
+                    backgroundColor: '#cdd475',
+                    color: '#8761a7',
+                    border: '2px solid #8761a7',
+                    borderRadius: 2,
+                    fontFamily: '"Kalam", cursive',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    '&:hover': {
+                      backgroundColor: '#dce291',
+                    },
+                    '&:disabled': {
+                      backgroundColor: '#f0f0f0',
+                      color: '#999',
+                    }
+                  }}
                 >
                   {gettingLocation ? 'Getting Location...' : 'Get Current Location'}
                 </Button>
@@ -308,34 +487,107 @@ const PhotoUpload = ({ open, onClose, onSuccess }) => {
                       checked={includeLocation}
                       onChange={(e) => setIncludeLocation(e.target.checked)}
                       disabled={uploading}
+                      sx={{
+                        color: '#8761a7',
+                        '&.Mui-checked': {
+                          color: '#8761a7',
+                        }
+                      }}
                     />
                   }
-                  label="Include location with this photo"
+                  label={
+                    <Typography sx={{ fontFamily: '"Kalam", cursive', color: '#8761a7' }}>
+                      Include location with this photo
+                    </Typography>
+                  }
                 />
-                <Typography variant="body2" color="text.secondary">
-                  Location: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    fontStyle: 'italic'
+                  }}
+                >
+                  📍 Location: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
                 </Typography>
               </Box>
             )}
           </CardContent>
         </Card>
 
-        <Typography variant="body2" color="text.secondary">
-          Your photo will be saved to today's memories and may be visible on the timeline and map views.
-        </Typography>
+        {/* Info Note */}
+        <Box sx={{ 
+          backgroundColor: '#dce291', 
+          p: 2, 
+          borderRadius: 2, 
+          border: '2px solid #8761a7',
+          mb: 2
+        }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontFamily: '"Kalam", cursive',
+              color: '#8761a7',
+              fontStyle: 'italic'
+            }}
+          >
+            📸 Your photo will be saved to today's memories and may be visible on the timeline and map views.
+          </Typography>
+        </Box>
       </DialogContent>
       
-      <DialogActions>
-        <Button onClick={handleClose} disabled={uploading}>
-          Cancel
+      {/* Action Buttons */}
+      <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
+        <Button 
+          onClick={handleClose} 
+          disabled={uploading}
+          variant="outlined"
+          sx={{
+            color: '#8761a7',
+            borderColor: '#8761a7',
+            borderWidth: 2,
+            borderRadius: 3,
+            fontFamily: '"Kalam", cursive',
+            fontSize: '1rem',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 3,
+            py: 1,
+            '&:hover': {
+              borderColor: '#8761a7',
+              borderWidth: 2,
+              backgroundColor: '#8761a720',
+            }
+          }}
+        >
+          CANCEL
         </Button>
+        
         <Button 
           onClick={handleUpload}
           variant="contained"
           disabled={!selectedFile || !title.trim() || uploading}
-          startIcon={<CloudUpload />}
+          startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <CloudUpload />}
+          sx={{
+            backgroundColor: '#6366f1',
+            color: 'white',
+            borderRadius: 3,
+            fontFamily: '"Kalam", cursive',
+            fontSize: '1rem',
+            fontWeight: 600,
+            textTransform: 'none',
+            px: 3,
+            py: 1,
+            '&:hover': {
+              backgroundColor: '#5856eb',
+            },
+            '&:disabled': {
+              backgroundColor: '#cccccc',
+            }
+          }}
         >
-          {uploading ? 'Uploading...' : 'Upload Photo'}
+          {uploading ? 'UPLOADING...' : 'UPLOAD PHOTO'}
         </Button>
       </DialogActions>
     </Dialog>

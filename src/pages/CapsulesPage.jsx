@@ -1,5 +1,4 @@
-// Update your src/pages/CapsulesPage.jsx with this enhanced version that supports recipients:
-
+// src/pages/CapsulesPage.jsx - Styled to match Dashboard design
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -15,8 +14,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  AppBar,
-  Toolbar,
   Avatar,
   Alert,
   CircularProgress,
@@ -26,7 +23,10 @@ import {
   LinearProgress,
   FormControlLabel,
   Checkbox,
-  Divider
+  Divider,
+  BottomNavigation,
+  BottomNavigationAction,
+  Paper
 } from '@mui/material';
 import {
   Add,
@@ -41,22 +41,31 @@ import {
   VideoFile,
   Delete,
   Email,
-  PersonAdd
+  PersonAdd,
+  Home,
+  CalendarToday,
+  PhotoCamera,
+  Person
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import ApiService from '../services/api';
 import PhotoViewer from '../components/common/PhotoViewer';
 
 const CapsulesPage = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [capsules, setCapsules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Bottom navigation
+  const [navValue, setNavValue] = useState(2); // Capsules page is index 2
   
   // Create capsule dialog
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -67,7 +76,7 @@ const CapsulesPage = () => {
     is_private: true
   });
 
-  // NEW: Recipient management
+  // Recipient management
   const [recipientEmails, setRecipientEmails] = useState(['']);
   const [sendToSelf, setSendToSelf] = useState(true);
   const [emailErrors, setEmailErrors] = useState({});
@@ -103,20 +112,20 @@ const CapsulesPage = () => {
     }
   };
 
-  // NEW: Email validation
+  // Email validation
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // NEW: Add recipient email field
+  // Add recipient email field
   const addRecipientField = () => {
     if (recipientEmails.length < 30) {
       setRecipientEmails([...recipientEmails, '']);
     }
   };
 
-  // NEW: Remove recipient email field
+  // Remove recipient email field
   const removeRecipientField = (index) => {
     if (recipientEmails.length > 1) {
       const newEmails = recipientEmails.filter((_, i) => i !== index);
@@ -129,7 +138,7 @@ const CapsulesPage = () => {
     }
   };
 
-  // NEW: Update recipient email
+  // Update recipient email
   const updateRecipientEmail = (index, email) => {
     const newEmails = [...recipientEmails];
     newEmails[index] = email;
@@ -143,6 +152,26 @@ const CapsulesPage = () => {
       delete newErrors[index];
     }
     setEmailErrors(newErrors);
+  };
+
+  const handleBottomNavigation = (event, newValue) => {
+    setNavValue(newValue);
+    switch(newValue) {
+      case 0:
+        navigate('/dashboard');
+        break;
+      case 1:
+        navigate('/timeline');
+        break;
+      case 2:
+        navigate('/capsules');
+        break;
+      case 3:
+        navigate('/profile');
+        break;
+      default:
+        break;
+    }
   };
 
   const handleFileSelect = (event) => {
@@ -209,7 +238,7 @@ const CapsulesPage = () => {
       formData.append('open_date', capsuleData.open_date.toISOString());
       formData.append('is_private', capsuleData.is_private);
       
-      // NEW: Add recipient emails
+      // Add recipient emails
       if (validEmails.length > 0) {
         formData.append('recipient_emails', validEmails.join(','));
       }
@@ -267,7 +296,7 @@ const CapsulesPage = () => {
     setEmailErrors({});
   };
 
- const handleOpenCapsule = async (capsule) => {
+  const handleOpenCapsule = async (capsule) => {
     if (capsule.is_opened) {
       setSelectedCapsule(capsule);
       setViewDialogOpen(true);
@@ -336,9 +365,6 @@ const CapsulesPage = () => {
     const now = new Date();
     const open = new Date(openDate);
     
-    console.log('Now:', now.toISOString());
-    console.log('Open date:', open.toISOString());
-    
     if (open <= now) {
       return 'Ready to open';
     }
@@ -358,7 +384,6 @@ const CapsulesPage = () => {
       return 'Opening soon';
     }
   };
-
 
   const renderMediaPreview = (file, index) => {
     const isVideo = file.type.startsWith('video/');
@@ -486,228 +511,649 @@ const CapsulesPage = () => {
   const openCapsules = capsules.filter(c => c.is_opened);
   const closedCapsules = capsules.filter(c => !c.is_opened);
 
+  if (loading) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        sx={{ backgroundColor: '#fffefb' }}
+      >
+        <CircularProgress sx={{ color: '#8761a7' }} />
+      </Box>
+    );
+  }
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box>
-        {/* Navigation Bar */}
-        <AppBar position="static" elevation={1}>
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Memory Capsules
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar 
-                src={user?.avatar_url} 
-                sx={{ width: 32, height: 32 }}
+      <Box sx={{ 
+        backgroundColor: '#fffefb', 
+        minHeight: '100vh',
+        paddingBottom: '80px' // Space for bottom navigation
+      }}>
+        {/* Header - Same as Dashboard */}
+        <Box sx={{ 
+          backgroundColor: '#fffefb',
+          borderBottom: '3px solid #8761a7',
+          boxShadow: '0 2px 10px rgba(135, 97, 167, 0.1)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000
+        }}>
+          <Container maxWidth="lg">
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              py: 1,
+              px: 3
+            }}>
+              {/* Logo */}
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#cdd475',
+                  fontWeight: 700,
+                  fontSize: { xs: '1.6rem', md: '2rem' }
+                }}
               >
-                {!user?.avatar_url && user?.username?.charAt(0).toUpperCase()}
-              </Avatar>
-              <Typography variant="body2">
-                {user?.username}
+                Quivio
               </Typography>
-              <Button color="inherit" onClick={logout}>
-                Logout
+
+              {/* User Section */}
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2,
+                backgroundColor: '#cdd475',
+                borderRadius: '18px',
+                padding: '6px 14px',
+                border: '2px solid #8761a7'
+              }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    color: '#8761a7',
+                    fontFamily: '"Kalam", cursive',
+                    fontWeight: 600,
+                    fontSize: { xs: '0.9rem', md: '1rem' }
+                  }}
+                >
+                  {user?.username}
+                </Typography>
+                <Avatar 
+                  src={user?.avatar_url} 
+                  sx={{ 
+                    width: { xs: 32, md: 36 }, 
+                    height: { xs: 32, md: 36 },
+                    border: '2px solid #8761a7',
+                    bgcolor: '#fffefb'
+                  }}
+                >
+                  {(!user?.avatar_url) && user?.username?.charAt(0).toUpperCase()}
+                </Avatar>
+                <Button 
+                  onClick={logout}
+                  sx={{ 
+                    color: '#8761a7',
+                    fontFamily: '"Kalam", cursive',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: { xs: '0.8rem', md: '0.9rem' },
+                    backgroundColor: '#fffefb',
+                    border: '2px solid #8761a7',
+                    borderRadius: '14px',
+                    px: 2,
+                    py: 0.25,
+                    minHeight: 'auto',
+                    '&:hover': {
+                      backgroundColor: '#fdfedbff',
+                      transform: 'scale(1.05)'
+                    }
+                  }}
+                >
+                  Logout
+                </Button>
+              </Box>
+            </Box>
+          </Container>
+        </Box>
+
+        {/* Main Content */}
+        <Container maxWidth="xl" sx={{ 
+          px: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          minHeight: 'calc(100vh - 200px)'
+        }}>
+          <Box sx={{ width: '100%', maxWidth: '1400px', mt: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  fontWeight: 700
+                }}
+              >
+                Memory Capsules
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setCreateDialogOpen(true)}
+                sx={{
+                  backgroundColor: '#cdd475',
+                  color: '#8761a7',
+                  border: '2px solid #8761a7',
+                  borderRadius: 3,
+                  fontFamily: '"Kalam", cursive',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  py: 1.5,
+                  px: 3,
+                  boxShadow: '0 4px 15px rgba(205, 212, 117, 0.3)',
+                  '&:hover': {
+                    backgroundColor: '#eff4b3ff',
+                    transform: 'scale(1.02)',
+                    boxShadow: '0 6px 20px rgba(205, 212, 117, 0.4)',
+                  }
+                }}
+              >
+                Create Capsule
               </Button>
             </Box>
-          </Toolbar>
-        </AppBar>
 
-        <Container maxWidth="lg" sx={{ mt: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-            <Typography variant="h4">
-              Your Memory Capsules
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setCreateDialogOpen(true)}
+            <Typography 
+              variant="body1" 
+              color="text.secondary" 
+              paragraph
+              sx={{ 
+                fontFamily: '"Kalam", cursive',
+                fontSize: '1.1rem',
+                color: '#8761a7',
+                mb: 4
+              }}
             >
-              Create Capsule
-            </Button>
+              Create time-locked memories with photos and videos for your future self or share them with others. Set a date and time, and your capsule will only open when that moment arrives.
+            </Typography>
+
+            {success && (
+              <Alert 
+                severity="success" 
+                sx={{ 
+                  mb: 3,
+                  backgroundColor: '#dce291',
+                  color: '#8761a7',
+                  border: '2px solid #8761a7',
+                  borderRadius: 3,
+                  fontFamily: '"Kalam", cursive',
+                  fontSize: '1rem'
+                }}
+              >
+                {success}
+              </Alert>
+            )}
+
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  backgroundColor: '#fffbef',
+                  color: '#8761a7',
+                  border: '2px solid #8761a7',
+                  borderRadius: 3,
+                  fontFamily: '"Kalam", cursive',
+                  fontSize: '1rem'
+                }}
+                onClose={() => setError('')}
+              >
+                {error}
+              </Alert>
+            )}
+
+            <Grid container spacing={4}>
+              {/* Locked Capsules - Left Side */}
+              <Grid item xs={12} md={6}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    fontWeight: 600,
+                    fontSize: '1.3rem'
+                  }}
+                >
+                  <Lock sx={{ color: '#8761a7' }} />
+                  Locked Capsules ({closedCapsules.length})
+                </Typography>
+                
+                {closedCapsules.length === 0 ? (
+                  <Card sx={{
+                    backgroundColor: '#fffbef',
+                    border: '3px solid #8761a7',
+                    borderRadius: 4,
+                    height: '200px',
+                    width: '100%'
+                  }}>
+                    <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                      <Lock sx={{ fontSize: 48, color: '#8761a7', mb: 2 }} />
+                      <Typography 
+                        sx={{ 
+                          color: '#8761a7',
+                          fontFamily: '"Kalam", cursive',
+                          fontSize: '1rem'
+                        }}
+                      >
+                        No locked capsules yet. Create your first time-locked memory!
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Grid container spacing={2}>
+                    {closedCapsules.map(capsule => (
+                      <Grid item xs={12} key={capsule.id}>
+                        <Card 
+                          sx={{ 
+                            cursor: 'pointer',
+                            backgroundColor: '#fffbef',
+                            border: '3px solid #8761a7',
+                            borderRadius: 4,
+                            height: '240px',
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            transition: 'all 0.3s ease',
+                            '&:hover': { 
+                              transform: 'translateY(-4px)',
+                              boxShadow: '0 8px 25px rgba(135, 97, 167, 0.2)'
+                            }
+                          }}
+                          onClick={() => handleOpenCapsule(capsule)}
+                        >
+                          <CardContent sx={{ 
+                            p: 2.5, 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            justifyContent: 'space-between',
+                            height: '100%',
+                            width: '100%'
+                          }}>
+                            <Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1.5 }}>
+                                <Typography 
+                                  variant="h6"
+                                  sx={{ 
+                                    fontFamily: '"Kalam", cursive',
+                                    color: '#8761a7',
+                                    fontWeight: 600,
+                                    fontSize: '1.1rem',
+                                    lineHeight: 1.2,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    flex: 1,
+                                    mr: 1
+                                  }}
+                                >
+                                  {capsule.title}
+                                </Typography>
+                                <Chip
+                                  icon={<Schedule />}
+                                  label={getTimeUntilOpen(capsule.open_date)}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: '#dce291',
+                                    color: '#8761a7',
+                                    fontFamily: '"Kalam", cursive',
+                                    fontWeight: 600,
+                                    fontSize: '0.7rem',
+                                    flexShrink: 0
+                                  }}
+                                />
+                              </Box>
+                              
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  color: '#8761a7',
+                                  fontFamily: '"Kalam", cursive',
+                                  fontSize: '0.85rem',
+                                  mb: 1.5
+                                }}
+                              >
+                                Opens {dayjs(capsule.open_date).format('MMM D, YYYY')}
+                              </Typography>
+                            </Box>
+
+                            <Box>
+                              {/* Media count indicators */}
+                              {capsule.media && capsule.media.length > 0 && (
+                                <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+                                  {capsule.media.filter(m => m.media_type === 'image').length > 0 && (
+                                    <Chip
+                                      icon={<ImageIcon />}
+                                      label={capsule.media.filter(m => m.media_type === 'image').length}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        borderColor: '#8761a7',
+                                        color: '#8761a7',
+                                        fontFamily: '"Kalam", cursive',
+                                        height: '24px',
+                                        fontSize: '0.7rem'
+                                      }}
+                                    />
+                                  )}
+                                  {capsule.media.filter(m => m.media_type === 'video').length > 0 && (
+                                    <Chip
+                                      icon={<VideoFile />}
+                                      label={capsule.media.filter(m => m.media_type === 'video').length}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        borderColor: '#8761a7',
+                                        color: '#8761a7',
+                                        fontFamily: '"Kalam", cursive',
+                                        height: '24px',
+                                        fontSize: '0.7rem'
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                              )}
+                              
+                              <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                  color: '#8761a7',
+                                  fontFamily: '"Kalam", cursive',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                Created {dayjs(capsule.created_at).format('MMM D, YYYY')}
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Grid>
+
+              {/* Opened Capsules - Right Side */}
+              <Grid item xs={12} md={6}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    fontWeight: 600,
+                    fontSize: '1.3rem'
+                  }}
+                >
+                  <LockOpen sx={{ color: '#cdd475' }} />
+                  Opened Capsules ({openCapsules.length})
+                </Typography>
+                
+                {openCapsules.length === 0 ? (
+                  <Card sx={{
+                    backgroundColor: '#fffbef',
+                    border: '3px solid #8761a7',
+                    borderRadius: 4,
+                    height: '200px',
+                    width: '100%'
+                  }}>
+                    <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                      <LockOpen sx={{ fontSize: 48, color: '#cdd475', mb: 2 }} />
+                      <Typography 
+                        sx={{ 
+                          color: '#8761a7',
+                          fontFamily: '"Kalam", cursive',
+                          fontSize: '1rem'
+                        }}
+                      >
+                        No opened capsules yet. Your memories will appear here when their time comes.
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Grid container spacing={2}>
+                    {openCapsules.map(capsule => (
+                      <Grid item xs={12} key={capsule.id}>
+                        <Card 
+                          sx={{ 
+                            cursor: 'pointer',
+                            backgroundColor: '#fffbef',
+                            border: '3px solid #cdd475',
+                            borderRadius: 4,
+                            height: '240px',
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            transition: 'all 0.3s ease',
+                            position: 'relative',
+                            '&:hover': { 
+                              transform: 'translateY(-4px)',
+                              boxShadow: '0 8px 25px rgba(205, 212, 117, 0.3)'
+                            },
+                            '&::before': {
+                              content: '""',
+                              position: 'absolute',
+                              top: '-3px',
+                              left: '-3px',
+                              right: '-3px',
+                              bottom: '-3px',
+                              background: 'linear-gradient(45deg, #edf3a6ff, #fbfed3ff)',
+                              borderRadius: 4,
+                              zIndex: -1
+                            }
+                          }}
+                          onClick={() => handleOpenCapsule(capsule)}
+                        >
+                          <CardContent sx={{ 
+                            p: 2.5, 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            justifyContent: 'space-between',
+                            height: '100%',
+                            width: '100%'
+                          }}>
+                            <Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1.5 }}>
+                                <Typography 
+                                  variant="h6"
+                                  sx={{ 
+                                    fontFamily: '"Kalam", cursive',
+                                    color: '#8761a7',
+                                    fontWeight: 600,
+                                    fontSize: '1.1rem',
+                                    lineHeight: 1.2,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    flex: 1,
+                                    mr: 1
+                                  }}
+                                >
+                                  {capsule.title}
+                                </Typography>
+                                <Chip
+                                  icon={<LockOpen />}
+                                  label="Opened"
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: '#dce291',
+                                    color: '#8761a7',
+                                    fontFamily: '"Kalam", cursive',
+                                    fontWeight: 600,
+                                    fontSize: '0.7rem',
+                                    flexShrink: 0
+                                  }}
+                                />
+                              </Box>
+                              
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  color: '#8761a7',
+                                  fontFamily: '"Kalam", cursive',
+                                  fontSize: '0.85rem',
+                                  mb: 1.5
+                                }}
+                              >
+                                Opened {dayjs(capsule.opened_at).format('MMM D, YYYY')}
+                              </Typography>
+                            </Box>
+
+                            <Box>
+                              {/* Media count indicators */}
+                              {capsule.media && capsule.media.length > 0 && (
+                                <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+                                  {capsule.media.filter(m => m.media_type === 'image').length > 0 && (
+                                    <Chip
+                                      icon={<ImageIcon />}
+                                      label={capsule.media.filter(m => m.media_type === 'image').length}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        borderColor: '#8761a7',
+                                        color: '#8761a7',
+                                        fontFamily: '"Kalam", cursive',
+                                        height: '24px',
+                                        fontSize: '0.7rem'
+                                      }}
+                                    />
+                                  )}
+                                  {capsule.media.filter(m => m.media_type === 'video').length > 0 && (
+                                    <Chip
+                                      icon={<VideoFile />}
+                                      label={capsule.media.filter(m => m.media_type === 'video').length}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        borderColor: '#8761a7',
+                                        color: '#8761a7',
+                                        fontFamily: '"Kalam", cursive',
+                                        height: '24px',
+                                        fontSize: '0.7rem'
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                              )}
+                              
+                              <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                  color: '#8761a7',
+                                  fontFamily: '"Kalam", cursive',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                Created {dayjs(capsule.created_at).format('MMM D, YYYY')}
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Grid>
+            </Grid>
           </Box>
-
-          <Typography variant="body1" color="text.secondary" paragraph>
-            Create time-locked memories with photos and videos for your future self or share them with others. Set a date and time, and your capsule will only open when that moment arrives.
-          </Typography>
-
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {success}
-            </Alert>
-          )}
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-              {error}
-            </Alert>
-          )}
-
-          {loading && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-              <CircularProgress />
-            </Box>
-          )}
-
-          <Grid container spacing={4}>
-            {/* Closed Capsules */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Lock color="primary" />
-                Locked Capsules ({closedCapsules.length})
-              </Typography>
-              
-              {closedCapsules.length === 0 ? (
-                <Card>
-                  <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                    <Lock sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography color="text.secondary">
-                      No locked capsules yet. Create your first time-locked memory!
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Grid container spacing={2}>
-                  {closedCapsules.map(capsule => (
-                    <Grid item xs={12} key={capsule.id}>
-                      <Card 
-                        sx={{ 
-                          cursor: 'pointer',
-                          '&:hover': { boxShadow: 2 }
-                        }}
-                        onClick={() => handleOpenCapsule(capsule)}
-                      >
-                        <CardContent>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                            <Typography variant="h6">
-                              {capsule.title}
-                            </Typography>
-                            <Chip
-                              icon={<Schedule />}
-                              label={getTimeUntilOpen(capsule.open_date)}
-                              size="small"
-                              color="primary"
-                            />
-                          </Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Opens on {dayjs(capsule.open_date).format('MMMM D, YYYY at h:mm A')}
-                          </Typography>
-                          
-                          {/* Media count indicators */}
-                          {capsule.media && capsule.media.length > 0 && (
-                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                              {capsule.media.filter(m => m.media_type === 'image').length > 0 && (
-                                <Chip
-                                  icon={<ImageIcon />}
-                                  label={capsule.media.filter(m => m.media_type === 'image').length}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                              {capsule.media.filter(m => m.media_type === 'video').length > 0 && (
-                                <Chip
-                                  icon={<VideoFile />}
-                                  label={capsule.media.filter(m => m.media_type === 'video').length}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                            </Box>
-                          )}
-                          
-                          <Typography variant="caption" color="text.secondary">
-                            Created {dayjs(capsule.created_at).format('MMM D, YYYY')}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
-            </Grid>
-
-            {/* Opened Capsules */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LockOpen color="success" />
-                Opened Capsules ({openCapsules.length})
-              </Typography>
-              
-              {openCapsules.length === 0 ? (
-                <Card>
-                  <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                    <LockOpen sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Typography color="text.secondary">
-                      No opened capsules yet. Your memories will appear here when their time comes.
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Grid container spacing={2}>
-                  {openCapsules.map(capsule => (
-                    <Grid item xs={12} key={capsule.id}>
-                      <Card 
-                        sx={{ 
-                          cursor: 'pointer',
-                          border: '2px solid',
-                          borderColor: 'success.main',
-                          '&:hover': { boxShadow: 2 }
-                        }}
-                        onClick={() => handleOpenCapsule(capsule)}
-                      >
-                        <CardContent>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                            <Typography variant="h6">
-                              {capsule.title}
-                            </Typography>
-                            <Chip
-                              icon={<LockOpen />}
-                              label="Opened"
-                              size="small"
-                              color="success"
-                            />
-                          </Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Opened on {dayjs(capsule.opened_at).format('MMMM D, YYYY at h:mm A')}
-                          </Typography>
-                          
-                          {/* Media count indicators */}
-                          {capsule.media && capsule.media.length > 0 && (
-                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                              {capsule.media.filter(m => m.media_type === 'image').length > 0 && (
-                                <Chip
-                                  icon={<ImageIcon />}
-                                  label={capsule.media.filter(m => m.media_type === 'image').length}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                              {capsule.media.filter(m => m.media_type === 'video').length > 0 && (
-                                <Chip
-                                  icon={<VideoFile />}
-                                  label={capsule.media.filter(m => m.media_type === 'video').length}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              )}
-                            </Box>
-                          )}
-                          
-                          <Typography variant="caption" color="text.secondary">
-                            Created {dayjs(capsule.created_at).format('MMM D, YYYY')}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
-            </Grid>
-          </Grid>
         </Container>
 
-        {/* ENHANCED Create Capsule Dialog with Recipients */}
-        <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>Create Memory Capsule</DialogTitle>
+        {/* Bottom Navigation */}
+        <Paper 
+          sx={{ 
+            position: 'fixed', 
+            bottom: 0, 
+            left: 0, 
+            right: 0,
+            backgroundColor: '#cdd475',
+            borderTop: '3px solid #8761a7',
+            boxShadow: '0 -4px 20px rgba(135, 97, 167, 0.15)'
+          }} 
+          elevation={3}
+        >
+          <BottomNavigation
+            value={navValue}
+            onChange={handleBottomNavigation}
+            sx={{
+              backgroundColor: 'transparent',
+              height: '70px',
+              '& .MuiBottomNavigationAction-root': {
+                color: '#8761a7',
+                fontFamily: '"Kalam", cursive',
+                fontWeight: 500,
+                '&.Mui-selected': {
+                  color: '#8761a7',
+                  fontWeight: 600,
+                }
+              }
+            }}
+          >
+            <BottomNavigationAction 
+              label="Home" 
+              icon={<Home sx={{ fontSize: 30 }} />} 
+            />
+            <BottomNavigationAction 
+              label="Calendar" 
+              icon={<CalendarToday sx={{ fontSize: 30 }} />} 
+            />
+            <BottomNavigationAction 
+              label="Capsules" 
+              icon={<PhotoCamera sx={{ fontSize: 30 }} />} 
+            />
+            <BottomNavigationAction 
+              label="Profile" 
+              icon={<Person sx={{ fontSize: 30 }} />} 
+            />
+          </BottomNavigation>
+        </Paper>
+
+        {/* Create Capsule Dialog */}
+        <Dialog 
+          open={createDialogOpen} 
+          onClose={() => setCreateDialogOpen(false)} 
+          maxWidth="md" 
+          fullWidth
+          PaperProps={{
+            sx: {
+              backgroundColor: '#fffbef',
+              border: '3px solid #8761a7',
+              borderRadius: 4
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            fontFamily: '"Kalam", cursive',
+            color: '#8761a7',
+            fontWeight: 600,
+            fontSize: '1.5rem'
+          }}>
+            Create Memory Capsule
+          </DialogTitle>
           <DialogContent>
             <TextField
               fullWidth
@@ -716,6 +1162,26 @@ const CapsulesPage = () => {
               onChange={(e) => setCapsuleData({...capsuleData, title: e.target.value})}
               margin="normal"
               placeholder="What is this memory about?"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontFamily: '"Kalam", cursive',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#8761a7'
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#8761a7',
+                    borderWidth: '2px'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  '&.Mui-focused': {
+                    color: '#8761a7'
+                  }
+                }
+              }}
             />
 
             <TextField
@@ -727,25 +1193,74 @@ const CapsulesPage = () => {
               onChange={(e) => setCapsuleData({...capsuleData, message: e.target.value})}
               margin="normal"
               placeholder="Write a message to your future self..."
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontFamily: '"Kalam", cursive',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#8761a7'
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#8761a7',
+                    borderWidth: '2px'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  '&.Mui-focused': {
+                    color: '#8761a7'
+                  }
+                }
+              }}
             />
 
             <DateTimePicker
               label="Open Date & Time"
               value={capsuleData.open_date}
               onChange={(newValue) => setCapsuleData({...capsuleData, open_date: newValue})}
-              sx={{ width: '100%', mt: 2 }}
+              sx={{ 
+                width: '100%', 
+                mt: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontFamily: '"Kalam", cursive'
+                },
+                '& .MuiInputLabel-root': {
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7'
+                }
+              }}
               minDateTime={dayjs().add(1, 'hour')}
             />
 
-            <Divider sx={{ my: 3 }} />
+            <Divider sx={{ my: 3, borderColor: '#8761a7' }} />
 
-            {/* NEW: Recipient Section */}
+            {/* Recipient Section */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Email color="primary" />
+              <Typography 
+                variant="subtitle1" 
+                gutterBottom 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  fontWeight: 600
+                }}
+              >
+                <Email sx={{ color: '#8761a7' }} />
                 Email Recipients (Optional)
               </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography 
+                variant="body2" 
+                gutterBottom
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7'
+                }}
+              >
                 Add email addresses to share this capsule with others when it opens.
               </Typography>
 
@@ -760,6 +1275,14 @@ const CapsulesPage = () => {
                     placeholder="friend@example.com"
                     error={!!emailErrors[index]}
                     helperText={emailErrors[index]}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        fontFamily: '"Kalam", cursive'
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontFamily: '"Kalam", cursive'
+                      }
+                    }}
                   />
                   {recipientEmails.length > 1 && (
                     <IconButton onClick={() => removeRecipientField(index)} color="error" size="small">
@@ -774,7 +1297,12 @@ const CapsulesPage = () => {
                 onClick={addRecipientField}
                 disabled={recipientEmails.length >= 30}
                 size="small"
-                sx={{ mt: 1 }}
+                sx={{ 
+                  mt: 1,
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  borderColor: '#8761a7'
+                }}
               >
                 Add Recipient ({recipientEmails.length}/30)
               </Button>
@@ -784,18 +1312,33 @@ const CapsulesPage = () => {
                   <Checkbox
                     checked={sendToSelf}
                     onChange={(e) => setSendToSelf(e.target.checked)}
+                    sx={{ color: '#8761a7' }}
                   />
                 }
                 label="Send email notification to me when opened"
-                sx={{ mt: 2 }}
+                sx={{ 
+                  mt: 2,
+                  '& .MuiFormControlLabel-label': {
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7'
+                  }
+                }}
               />
             </Box>
 
-            <Divider sx={{ my: 3 }} />
+            <Divider sx={{ my: 3, borderColor: '#8761a7' }} />
 
             {/* Media Upload Section */}
             <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
+              <Typography 
+                variant="subtitle1" 
+                gutterBottom
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  fontWeight: 600
+                }}
+              >
                 Attach Photos & Videos (Optional)
               </Typography>
               
@@ -813,7 +1356,18 @@ const CapsulesPage = () => {
                   component="span"
                   startIcon={<CloudUpload />}
                   fullWidth
-                  sx={{ mb: 2 }}
+                  sx={{ 
+                    mb: 2,
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    borderColor: '#8761a7',
+                    borderWidth: '2px',
+                    '&:hover': {
+                      borderColor: '#8761a7',
+                      borderWidth: '2px',
+                      backgroundColor: 'rgba(205, 212, 117, 0.1)'
+                    }
+                  }}
                 >
                   Select Photos & Videos (Max 10 files)
                 </Button>
@@ -821,7 +1375,14 @@ const CapsulesPage = () => {
 
               {selectedFiles.length > 0 && (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <Typography 
+                    variant="body2" 
+                    gutterBottom
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7'
+                    }}
+                  >
                     Selected files ({selectedFiles.length}/10):
                   </Typography>
                   <Grid container spacing={1}>
@@ -834,7 +1395,15 @@ const CapsulesPage = () => {
                 </Box>
               )}
 
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  display: 'block', 
+                  mt: 1,
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7'
+                }}
+              >
                 • Images: max 10MB each • Videos: max 50MB each
                 <br />
                 • Supported formats: JPG, PNG, GIF, MP4, MOV, AVI
@@ -843,19 +1412,48 @@ const CapsulesPage = () => {
 
             {uploading && (
               <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" gutterBottom>
+                <Typography 
+                  variant="body2" 
+                  gutterBottom
+                  sx={{ 
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7'
+                  }}
+                >
                   Creating capsule... {uploadProgress}%
                 </Typography>
-                <LinearProgress variant="determinate" value={uploadProgress} />
+                <LinearProgress 
+                  variant="determinate" 
+                  value={uploadProgress} 
+                  sx={{
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: '#cdd475'
+                    }
+                  }}
+                />
               </Box>
             )}
 
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mt: 2,
+                fontFamily: '"Kalam", cursive',
+                color: '#8761a7'
+              }}
+            >
               Your capsule will be locked until the specified date and time. Email notifications will be sent to all recipients when it opens.
             </Typography>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setCreateDialogOpen(false)} disabled={uploading}>
+          <DialogActions sx={{ p: 3 }}>
+            <Button 
+              onClick={() => setCreateDialogOpen(false)} 
+              disabled={uploading}
+              sx={{ 
+                fontFamily: '"Kalam", cursive',
+                color: '#8761a7'
+              }}
+            >
               Cancel
             </Button>
             <Button 
@@ -863,6 +1461,18 @@ const CapsulesPage = () => {
               variant="contained"
               disabled={uploading}
               startIcon={<Send />}
+              sx={{
+                backgroundColor: '#cdd475',
+                color: '#8761a7',
+                border: '2px solid #8761a7',
+                borderRadius: 3,
+                fontFamily: '"Kalam", cursive',
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: '#dce291'
+                }
+              }}
             >
               {uploading ? 'Creating...' : 'Create Capsule'}
             </Button>
@@ -870,19 +1480,49 @@ const CapsulesPage = () => {
         </Dialog>
 
         {/* View Capsule Dialog */}
-        <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="md" fullWidth>
+        <Dialog 
+          open={viewDialogOpen} 
+          onClose={() => setViewDialogOpen(false)} 
+          maxWidth="md" 
+          fullWidth
+          PaperProps={{
+            sx: {
+              backgroundColor: '#fffbef',
+              border: '3px solid #8761a7',
+              borderRadius: 4
+            }
+          }}
+        >
           {selectedCapsule && (
             <>
               <DialogTitle>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  {selectedCapsule.title}
+                  <Typography 
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7',
+                      fontWeight: 600,
+                      fontSize: '1.5rem'
+                    }}
+                  >
+                    {selectedCapsule.title}
+                  </Typography>
                   <IconButton onClick={() => setViewDialogOpen(false)}>
-                    <Close />
+                    <Close sx={{ color: '#8761a7' }} />
                   </IconButton>
                 </Box>
               </DialogTitle>
               <DialogContent>
-                <Typography variant="body1" paragraph>
+                <Typography 
+                  variant="body1" 
+                  paragraph
+                  sx={{ 
+                    fontFamily: '"Kalam", cursive',
+                    color: '#8761a7',
+                    fontSize: '1.1rem',
+                    lineHeight: 1.6
+                  }}
+                >
                   {selectedCapsule.message}
                 </Typography>
                 
@@ -891,18 +1531,33 @@ const CapsulesPage = () => {
                   renderCapsuleMedia(selectedCapsule.media)
                 )}
                 
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
+                <Box sx={{ 
+                  mt: 2, 
+                  p: 2, 
+                  bgcolor: '#dce291', 
+                  borderRadius: 2,
+                  border: '2px solid #8761a7'
+                }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7',
+                      fontWeight: 600
+                    }}
+                  >
                     <strong>Created:</strong> {dayjs(selectedCapsule.created_at).format('MMMM D, YYYY at h:mm A')}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7',
+                      fontWeight: 600
+                    }}
+                  >
                     <strong>Scheduled to open:</strong> {dayjs(selectedCapsule.open_date).format('MMMM D, YYYY at h:mm A')}
                   </Typography>
-                  {selectedCapsule.opened_at && (
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Actually opened:</strong> {dayjs(selectedCapsule.opened_at).format('MMMM D, YYYY at h:mm A')}
-                    </Typography>
-                  )}
                 </Box>
               </DialogContent>
             </>
