@@ -1,4 +1,4 @@
-// src/pages/ProfilePage.jsx - Styled to match Dashboard and Capsules design
+// src/pages/ProfilePage.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -201,8 +201,34 @@ const ProfilePage = () => {
   };
 
   const handlePasswordChange = async () => {
+    // Client-side validation
+    if (!passwordData.current_password.trim()) {
+      setError('Current password is required');
+      return;
+    }
+
+    if (!passwordData.new_password.trim()) {
+      setError('New password is required');
+      return;
+    }
+
+    if (!passwordData.confirm_new_password.trim()) {
+      setError('Please confirm your new password');
+      return;
+    }
+
+    if (passwordData.new_password.length < 8) {
+      setError('New password must be at least 8 characters long');
+      return;
+    }
+
     if (passwordData.new_password !== passwordData.confirm_new_password) {
       setError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.new_password === passwordData.current_password) {
+      setError('New password must be different from current password');
       return;
     }
 
@@ -226,7 +252,45 @@ const ProfilePage = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Password change failed:', error);
-      setError(error.response?.data?.detail || 'Failed to change password');
+      
+      // Properly handle different error types
+      let errorMessage = 'Failed to change password';
+      
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        
+        // Handle validation errors (arrays of error objects)
+        if (Array.isArray(detail)) {
+          errorMessage = detail
+            .map(err => {
+              if (typeof err === 'object' && err.msg) {
+                return err.msg;
+              } else if (typeof err === 'string') {
+                return err;
+              }
+              return 'Validation error';
+            })
+            .join('. ');
+        } 
+        // Handle string errors
+        else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
+        // Handle object errors
+        else if (typeof detail === 'object') {
+          errorMessage = JSON.stringify(detail);
+        }
+      } 
+      // Handle specific HTTP status codes
+      else if (error.response?.status === 400) {
+        errorMessage = 'Current password is incorrect';
+      } else if (error.response?.status === 422) {
+        errorMessage = 'Password requirements not met. Password must be at least 8 characters long.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -859,15 +923,48 @@ const ProfilePage = () => {
                               <Button
                                 variant="contained"
                                 onClick={handlePasswordChange}
-                                disabled={loading}
+                                disabled={
+                                  loading || 
+                                  !passwordData.current_password.trim() ||
+                                  !passwordData.new_password.trim() ||
+                                  !passwordData.confirm_new_password.trim()
+                                }
                                 sx={{
-                                  backgroundColor: '#cdd475',
-                                  color: '#8761a7',
+                                  backgroundColor: (
+                                    passwordData.current_password.trim() &&
+                                    passwordData.new_password.trim() &&
+                                    passwordData.confirm_new_password.trim() &&
+                                    !loading
+                                  ) ? '#cdd475' : '#f0f0f0',
+                                  color: (
+                                    passwordData.current_password.trim() &&
+                                    passwordData.new_password.trim() &&
+                                    passwordData.confirm_new_password.trim() &&
+                                    !loading
+                                  ) ? '#8761a7' : '#999',
+                                  border: (
+                                    passwordData.current_password.trim() &&
+                                    passwordData.new_password.trim() &&
+                                    passwordData.confirm_new_password.trim() &&
+                                    !loading
+                                  ) ? '2px solid #8761a7' : '2px solid #ddd',
+                                  borderRadius: 3,
                                   fontFamily: '"Kalam", cursive',
                                   fontWeight: 600,
                                   textTransform: 'none',
-                                  '&:hover': {
+                                  '&:hover': (
+                                    passwordData.current_password.trim() &&
+                                    passwordData.new_password.trim() &&
+                                    passwordData.confirm_new_password.trim() &&
+                                    !loading
+                                  ) ? {
                                     backgroundColor: '#dce291'
+                                  } : {},
+                                  '&:disabled': {
+                                    backgroundColor: '#f0f0f0',
+                                    color: '#999',
+                                    border: '2px solid #ddd',
+                                    cursor: 'not-allowed'
                                   }
                                 }}
                               >
@@ -882,13 +979,18 @@ const ProfilePage = () => {
                                     new_password: '',
                                     confirm_new_password: ''
                                   });
+                                  setError(''); // Clear any existing errors
                                 }}
                                 sx={{
                                   color: '#8761a7',
                                   borderColor: '#8761a7',
                                   fontFamily: '"Kalam", cursive',
                                   fontWeight: 600,
-                                  textTransform: 'none'
+                                  textTransform: 'none',
+                                  '&:hover': {
+                                    borderColor: '#8761a7',
+                                    backgroundColor: 'rgba(135, 97, 167, 0.1)'
+                                  }
                                 }}
                               >
                                 Cancel
