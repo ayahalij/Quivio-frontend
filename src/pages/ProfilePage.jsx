@@ -121,6 +121,13 @@ const ProfilePage = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout()
+    setTimeout(() => {
+      navigate('/')
+    }, 100)
+  }
+
   const handleAvatarSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -393,7 +400,7 @@ const ProfilePage = () => {
                 {(!user?.avatar_url) && user?.username?.charAt(0).toUpperCase()}
               </Avatar>
               <Button 
-                onClick={logout}
+                onClick={handleLogout}
                 sx={{ 
                   color: '#8761a7',
                   fontFamily: '"Kalam", cursive',
@@ -1000,63 +1007,6 @@ const ProfilePage = () => {
                         </Grid>
                       )}
                     </Box>
-                  </CardContent>
-                </Card>
-
-                {/* Account Actions */}
-                <Card sx={{
-                  backgroundColor: '#fffbef',
-                  border: '3px solid #8761a7',
-                  borderRadius: 4,
-                  mt: 3
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography 
-                      variant="h6" 
-                      gutterBottom
-                      sx={{ 
-                        fontFamily: '"Kalam", cursive',
-                        color: '#8761a7',
-                        fontWeight: 600,
-                        fontSize: '1.3rem'
-                      }}
-                    >
-                      Account Actions
-                    </Typography>
-                    
-                    <Typography 
-                      variant="body2" 
-                      paragraph
-                      sx={{ 
-                        color: '#8761a7',
-                        fontFamily: '"Kalam", cursive',
-                        fontSize: '1rem'
-                      }}
-                    >
-                      Member since: {new Date(user?.created_at).toLocaleDateString()}
-                    </Typography>
-
-                    <Button
-                      variant="contained"
-                      onClick={logout}
-                      fullWidth
-                      sx={{
-                        backgroundColor: '#ff6b6b',
-                        color: 'white',
-                        border: '2px solid #d63031',
-                        borderRadius: 3,
-                        fontFamily: '"Kalam", cursive',
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        py: 1.5,
-                        '&:hover': {
-                          backgroundColor: '#d63031',
-                          transform: 'scale(1.02)'
-                        }
-                      }}
-                    >
-                      Sign Out
-                    </Button>
                   </CardContent>
                 </Card>
               </Box>

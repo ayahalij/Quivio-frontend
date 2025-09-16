@@ -85,6 +85,13 @@ const Dashboard = () => {
     loadTodayData();
   };
 
+  const handleLogout = () => {
+    logout()
+    setTimeout(() => {
+      navigate('/')
+    }, 100)
+  }
+
   const handleDiarySuccess = (result) => {
     setSuccessMessage(`Diary entry saved! ${result.word_count} words written.`);
     setTimeout(() => setSuccessMessage(''), 3000);
@@ -221,7 +228,7 @@ const Dashboard = () => {
                 {(!user?.avatar_url) && user?.username?.charAt(0).toUpperCase()}
               </Avatar>
               <Button 
-                onClick={logout}
+                onClick={handleLogout}
                 sx={{ 
                   color: '#8761a7',
                   fontFamily: '"Kalam", cursive',
@@ -373,22 +380,6 @@ const Dashboard = () => {
                     >
                       You've tracked your mood today! Your emotional state helps us understand your well-being patterns and suggest personalized challenges.
                     </Typography>
-                    {todayData.mood.note && (
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: '#8761a7',
-                          fontFamily: '"Kalam", cursive',
-                          fontStyle: 'italic',
-                          p: 2,
-                          backgroundColor: '#dce291',
-                          borderRadius: 2,
-                          fontSize: '0.9rem'
-                        }}
-                      >
-                        Note: "{todayData.mood.note}"
-                      </Typography>
-                    )}
                   </Box>
                 ) : (
                   <Typography 
@@ -514,25 +505,6 @@ const Dashboard = () => {
                       }}
                     >
                       Your thoughts are safely recorded. Writing regularly helps process emotions, clarify thoughts, and track personal growth over time.
-                    </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#8761a7',
-                        fontFamily: '"Kalam", cursive',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        fontStyle: 'italic',
-                        p: 2,
-                        backgroundColor: '#dce291',
-                        borderRadius: 2,
-                        fontSize: '0.9rem'
-                      }}
-                    >
-                      "{todayData.diary.content.substring(0, 100)}..."
                     </Typography>
                   </Box>
                 ) : (

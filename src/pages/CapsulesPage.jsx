@@ -174,6 +174,13 @@ const CapsulesPage = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout()
+    setTimeout(() => {
+      navigate('/')
+    }, 100)
+  }
+
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
     const validFiles = [];
@@ -595,7 +602,7 @@ const CapsulesPage = () => {
                   {(!user?.avatar_url) && user?.username?.charAt(0).toUpperCase()}
                 </Avatar>
                 <Button 
-                  onClick={logout}
+                  onClick={handleLogout}
                   sx={{ 
                     color: '#8761a7',
                     fontFamily: '"Kalam", cursive',
