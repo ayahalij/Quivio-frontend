@@ -783,7 +783,7 @@ const LandingPage = () => {
               opacity: 0.8
             }}
           >
-            © 2024 Quivio. Made with care for your wellbeing.
+            © 2025 Quivio. Created with passion by Ayah Ali Aljabboori
           </Typography>
         </Container>
       </Box>
