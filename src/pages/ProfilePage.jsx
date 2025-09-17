@@ -30,6 +30,7 @@ import {
   Cancel,
   Analytics,
   PhotoCamera,
+  SendTimeExtension,
   AccountCircle,
   Home,
   CalendarToday,
@@ -605,7 +606,7 @@ const ProfilePage = () => {
                                 }
                               }}
                             >
-                              <PhotoCamera fontSize="small" />
+                              <SendTimeExtension fontSize="small" />
                             </IconButton>
                           </label>
                         </Box>
@@ -1090,7 +1091,7 @@ const ProfilePage = () => {
           />
           <BottomNavigationAction 
             label="Capsules" 
-            icon={<PhotoCamera sx={{ fontSize: 30 }} />} 
+            icon={<SendTimeExtension sx={{ fontSize: 30 }} />} 
           />
           <BottomNavigationAction 
             label="Profile" 

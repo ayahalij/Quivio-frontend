@@ -45,6 +45,7 @@ import {
   Home,
   CalendarToday,
   PhotoCamera,
+  SendTimeExtension,
   Person
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -1130,7 +1131,7 @@ const CapsulesPage = () => {
             />
             <BottomNavigationAction 
               label="Capsules" 
-              icon={<PhotoCamera sx={{ fontSize: 30 }} />} 
+              icon={<SendTimeExtension sx={{ fontSize: 30 }} />} 
             />
             <BottomNavigationAction 
               label="Profile" 

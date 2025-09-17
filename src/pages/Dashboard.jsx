@@ -23,6 +23,7 @@ import {
   Home,
   CalendarToday,
   AccountBox,
+  SendTimeExtension,
   PhotoCamera,
   Person
 } from '@mui/icons-material';
@@ -766,7 +767,7 @@ const Dashboard = () => {
           />
           <BottomNavigationAction 
             label="Capsules" 
-            icon={<PhotoCamera sx={{ fontSize: 30 }} />} 
+            icon={<SendTimeExtension sx={{ fontSize: 30 }} />} 
           />
           <BottomNavigationAction 
             label="Profile" 

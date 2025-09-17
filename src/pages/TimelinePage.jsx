@@ -39,6 +39,7 @@ import {
   Edit,
   Map as MapIcon,
   PhotoCamera,
+  SendTimeExtension,
   LocationOn,
   Close,
   Home,
@@ -2725,7 +2726,7 @@ const TimelinePage = () => {
           />
           <BottomNavigationAction 
             label="Capsules" 
-            icon={<PhotoCamera sx={{ fontSize: 30 }} />} 
+            icon={<SendTimeExtension sx={{ fontSize: 30 }} />} 
           />
           <BottomNavigationAction 
             label="Profile" 
