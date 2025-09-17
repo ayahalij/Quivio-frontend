@@ -1185,7 +1185,7 @@ const CapsulesPage = () => {
                   fontFamily: '"Kalam", cursive',
                   color: '#8761a7',
                   '&.Mui-focused': {
-                    color: '#8761a7'
+                    color: '#cdd475'
                   }
                 }
               }}
@@ -1216,7 +1216,7 @@ const CapsulesPage = () => {
                   fontFamily: '"Kalam", cursive',
                   color: '#8761a7',
                   '&.Mui-focused': {
-                    color: '#8761a7'
+                    color: '#cdd475'
                   }
                 }
               }}
@@ -1265,7 +1265,7 @@ const CapsulesPage = () => {
                 gutterBottom
                 sx={{ 
                   fontFamily: '"Kalam", cursive',
-                  color: '#8761a7'
+                  color: '#cdd475'
                 }}
               >
                 Add email addresses to share this capsule with others when it opens.
@@ -1299,6 +1299,7 @@ const CapsulesPage = () => {
                 </Box>
               ))}
 
+              <Box>
               <Button
                 startIcon={<PersonAdd />}
                 onClick={addRecipientField}
@@ -1313,13 +1314,14 @@ const CapsulesPage = () => {
               >
                 Add Recipient ({recipientEmails.length}/30)
               </Button>
+              </Box>
 
               <FormControlLabel
                 control={
                   <Checkbox
                     checked={sendToSelf}
                     onChange={(e) => setSendToSelf(e.target.checked)}
-                    sx={{ color: '#8761a7' }}
+                    sx={{ color: '#cdd475' }}
                   />
                 }
                 label="Send email notification to me when opened"
@@ -1327,7 +1329,7 @@ const CapsulesPage = () => {
                   mt: 2,
                   '& .MuiFormControlLabel-label': {
                     fontFamily: '"Kalam", cursive',
-                    color: '#8761a7'
+                    color: '#cdd475'
                   }
                 }}
               />
@@ -1366,8 +1368,8 @@ const CapsulesPage = () => {
                   sx={{ 
                     mb: 2,
                     fontFamily: '"Kalam", cursive',
-                    color: '#8761a7',
-                    borderColor: '#8761a7',
+                    color: '#cdd475',
+                    borderColor: '#cdd475',
                     borderWidth: '2px',
                     '&:hover': {
                       borderColor: '#8761a7',
