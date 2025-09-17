@@ -606,7 +606,7 @@ const ProfilePage = () => {
                                 }
                               }}
                             >
-                              <SendTimeExtension fontSize="small" />
+                              <PhotoCamera fontSize="small" />
                             </IconButton>
                           </label>
                         </Box>
