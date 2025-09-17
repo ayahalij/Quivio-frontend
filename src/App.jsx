@@ -33,7 +33,7 @@ const ProtectedRoute = ({ children }) => {
       <QuivioLoader 
         variant="spinner" 
         fullScreen 
-        message="Verifying your access..." 
+        message="Loading..." 
         size="large"
       />
     );
