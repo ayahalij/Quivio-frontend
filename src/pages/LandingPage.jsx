@@ -368,7 +368,6 @@ const LandingPage = () => {
                 <Card 
                   sx={{ 
                     height: '100%',
-                    width: '1150px',
                     transition: 'all 0.3s ease',
                     backgroundColor: '#fffbef',
                     border: '3px solid #8761a7',
