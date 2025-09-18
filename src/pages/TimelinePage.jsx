@@ -2776,7 +2776,7 @@ const TimelinePage = () => {
             icon={<Home sx={{ fontSize: 30 }} />} 
           />
           <BottomNavigationAction 
-            label="Calendar" 
+            label="Time Line" 
             icon={<CalendarToday sx={{ fontSize: 30 }} />} 
           />
           <BottomNavigationAction 
