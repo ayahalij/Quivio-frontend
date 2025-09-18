@@ -161,6 +161,11 @@ class ApiService {
     return response.data;
   }
 
+  async getDiaryEntry(diaryId) {
+  const response = await this.api.get(`/daily/diary/${diaryId}`);
+  return response.data;
+}
+
   // Challenge endpoints
   async getDailyChallenge() {
     const response = await this.api.get('/challenges/daily')
@@ -206,7 +211,7 @@ class ApiService {
 
   // Timeline endpoints
   async getCalendarData(year, month) {
-    const response = await this.api.get(`/timeline/calendar/${year}/${month}`)
+    const response = await this.api.get(`/timeline/calendar/${year}/${month}?include_full_diary=true`)
     return response.data
   }
 

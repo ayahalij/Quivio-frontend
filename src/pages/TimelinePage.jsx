@@ -327,6 +327,28 @@ const TimelinePage = () => {
     }
   };
 
+ const handleViewFullDiary = async (diaryId) => {
+  try {
+    setLoading(true);
+    const fullDiary = await ApiService.getDiaryEntry(diaryId);
+    setSelectedDay(prev => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        diary: {
+          ...prev.data.diary,
+          content: fullDiary.content
+        }
+      }
+    }));
+  } catch (error) {
+    console.error('Failed to fetch full diary:', error);
+    setError('Failed to load full diary content');
+  } finally {
+    setLoading(false);
+  }
+};
+
   const fetchPhotoStats = async () => {
     try {
       const response = await ApiService.getPhotoStats();
@@ -1865,53 +1887,81 @@ const TimelinePage = () => {
               </Box>
 
               {/* Enhanced Mood Section */}
-              {selectedDay.data.mood && renderMoodSection(selectedDay.data.mood)}
-
-              {selectedDay.data.diary && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography 
-                    variant="h6" 
-                    gutterBottom
-                    sx={{ 
-                      fontFamily: '"Kalam", cursive',
-                      color: '#8761a7',
-                      fontWeight: 600
-                    }}
-                  >
-                    Diary Entry
-                  </Typography>
-                  <Card sx={{ 
-                    backgroundColor: '#dce291',
-                    border: '2px solid #8761a7',
-                    borderRadius: 2,
-                    p: 3
-                  }}>
-                    <Typography 
-                      variant="body1"
-                      sx={{ 
-                        color: '#8761a7',
-                        fontFamily: '"Kalam", cursive',
-                        fontSize: '1.1rem',
-                        lineHeight: 1.6,
-                        mb: 2
-                      }}
-                    >
-                      {selectedDay.data.diary.excerpt}
-                    </Typography>
-                    <Chip
-                      label={`${selectedDay.data.diary.word_count} words`}
-                      size="small"
-                      sx={{
-                        backgroundColor: '#cdd475',
-                        color: '#8761a7',
-                        fontFamily: '"Kalam", cursive',
-                        fontWeight: 600,
-                        border: '1px solid #8761a7'
-                      }}
-                    />
-                  </Card>
-                </Box>
-              )}
+            {selectedDay.data.diary && (
+  <Box sx={{ mb: 3 }}>
+    <Typography 
+      variant="h6" 
+      gutterBottom
+      sx={{ 
+        fontFamily: '"Kalam", cursive',
+        color: '#8761a7',
+        fontWeight: 600
+      }}
+    >
+      Diary Entry
+    </Typography>
+    <Card sx={{ 
+      backgroundColor: '#dce291',
+      border: '2px solid #8761a7',
+      borderRadius: 2,
+      p: 3
+    }}>
+      <Typography 
+        variant="body1"
+        sx={{ 
+          color: '#8761a7',
+          fontFamily: '"Kalam", cursive',
+          fontSize: '1.1rem',
+          lineHeight: 1.6,
+          mb: 2,
+          whiteSpace: 'pre-wrap' // This preserves line breaks
+        }}
+      >
+        {selectedDay.data.diary.content || selectedDay.data.diary.excerpt}
+      </Typography>
+      
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+        <Chip
+          label={`${selectedDay.data.diary.word_count} words${!selectedDay.data.diary.content ? ' (excerpt shown)' : ''}`}
+          size="small"
+          sx={{
+            backgroundColor: '#cdd475',
+            color: '#8761a7',
+            fontFamily: '"Kalam", cursive',
+            fontWeight: 600,
+            border: '1px solid #8761a7'
+          }}
+        />
+        
+        {/* Show "Read Full Entry" button only if we don't have full content */}
+        {!selectedDay.data.diary.content && selectedDay.data.diary.id && (
+          <Button
+            size="small"
+            onClick={() => handleViewFullDiary(selectedDay.data.diary.id)}
+            disabled={loading}
+            sx={{
+              backgroundColor: '#8761a7',
+              color: 'white',
+              fontFamily: '"Kalam", cursive',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              borderRadius: 2,
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: '#6b4c87'
+              },
+              '&:disabled': {
+                backgroundColor: '#ccc'
+              }
+            }}
+          >
+            {loading ? 'Loading...' : 'Read Full Entry'}
+          </Button>
+        )}
+      </Box>
+    </Card>
+  </Box>
+)}
 
               {selectedDay.data.photos && selectedDay.data.photos.length > 0 && (
                 <Box sx={{ mb: 3 }}>
