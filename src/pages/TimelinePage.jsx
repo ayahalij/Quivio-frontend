@@ -1887,6 +1887,11 @@ const TimelinePage = () => {
               </Box>
 
               {/* Enhanced Mood Section */}
+
+
+
+               {/* Enhanced Mood Section */}
+              {selectedDay.data.mood && renderMoodSection(selectedDay.data.mood)}
             {selectedDay.data.diary && (
   <Box sx={{ mb: 3 }}>
     <Typography 
