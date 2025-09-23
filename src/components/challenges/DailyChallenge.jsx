@@ -23,7 +23,8 @@ import {
   Close, 
   PhotoCamera,
   Assignment,
-  Star
+  Star,
+  Mood
 } from '@mui/icons-material';
 import ApiService from '../../services/api';
 
@@ -32,6 +33,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [completing, setCompleting] = useState(false);
+  const [needsMood, setNeedsMood] = useState(false);
   
   // Photo upload states
   const [selectedFile, setSelectedFile] = useState(null);
@@ -51,6 +53,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
     setPreviewUrl(null);
     setUploading(false);
     setUploadMode(false);
+    setNeedsMood(false);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -59,6 +62,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
   const fetchDailyChallenge = async () => {
     setLoading(true);
     setError(null);
+    setNeedsMood(false);
 
     try {
       const result = await ApiService.getDailyChallenge();
@@ -66,7 +70,15 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
       setChallengeData(result);
     } catch (error) {
       console.error('Failed to fetch daily challenge:', error);
-      setError(error.response?.data?.detail || 'Failed to load today\'s challenge')
+      
+      // Check if the error is about needing to set mood first
+      if (error.response?.status === 400 && 
+          error.response?.data?.detail?.includes('mood first')) {
+        setNeedsMood(true);
+        setError('Please log your mood first to get a personalized daily challenge!');
+      } else {
+        setError(error.response?.data?.detail || 'Failed to load today\'s challenge');
+      }
     } finally {
       setLoading(false);
     }
@@ -181,6 +193,17 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  const getMoodLevelName = (moodLevel) => {
+    const names = {
+      1: 'Very Sad',
+      2: 'Sad', 
+      3: 'Neutral',
+      4: 'Happy',
+      5: 'Very Happy'
+    };
+    return names[moodLevel] || 'Unknown';
+  };
+
   const handleClose = () => {
     resetPhotoStates();
     onClose();
@@ -232,8 +255,65 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
           </Box>
         )}
 
+        {/* Need Mood First Message */}
+        {needsMood && !loading && (
+          <Card sx={{ 
+            mb: 3,
+            backgroundColor: '#fff3cd',
+            border: '2px solid #ffc107',
+            borderRadius: 3
+          }}>
+            <CardContent sx={{ p: 3, textAlign: 'center' }}>
+              <Mood sx={{ fontSize: 48, color: '#ffc107', mb: 2 }} />
+              <Typography 
+                variant="h6" 
+                gutterBottom
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  fontWeight: 600
+                }}
+              >
+                Set Your Mood First!
+              </Typography>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  fontFamily: '"Kalam", cursive',
+                  color: '#8761a7',
+                  mb: 3,
+                  lineHeight: 1.6
+                }}
+              >
+                To get a personalized photography challenge that matches your current mood, 
+                please log your mood first. Your challenge will be tailored to help you based on how you're feeling today!
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={handleClose}
+                sx={{
+                  backgroundColor: '#8761a7',
+                  color: 'white',
+                  borderRadius: 3,
+                  fontFamily: '"Kalam", cursive',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    backgroundColor: '#9e7ebf',
+                  }
+                }}
+              >
+                Go Set Your Mood
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Error Alert */}
-        {error && (
+        {error && !needsMood && (
           <Alert 
             severity="error" 
             sx={{ 
@@ -271,7 +351,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
         )}
 
         {/* Challenge Content */}
-        {challengeData && !loading && (
+        {challengeData && !loading && !needsMood && (
           <>
             {/* Challenge Card */}
             <Card sx={{ 
@@ -282,15 +362,28 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
             }}>
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Chip 
-                    label={challengeData.challenge.difficulty_level} 
-                    sx={{
-                      backgroundColor: getDifficultyColor(challengeData.challenge.difficulty_level),
-                      color: 'white',
-                      fontFamily: '"Kalam", cursive',
-                      fontWeight: 600
-                    }}
-                  />
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Chip 
+                      label={challengeData.challenge.difficulty_level} 
+                      sx={{
+                        backgroundColor: getDifficultyColor(challengeData.challenge.difficulty_level),
+                        color: 'white',
+                        fontFamily: '"Kalam", cursive',
+                        fontWeight: 600
+                      }}
+                    />
+                    {challengeData.user_challenge?.mood_id && (
+                      <Chip 
+                        label={`Mood: ${getMoodLevelName(challengeData.challenge.mood_trigger)}`}
+                        sx={{
+                          backgroundColor: '#8761a7',
+                          color: 'white',
+                          fontFamily: '"Kalam", cursive',
+                          fontWeight: 600
+                        }}
+                      />
+                    )}
+                  </Box>
                   {challengeData.user_challenge?.is_completed && (
                     <Chip 
                       icon={<CheckCircle />}
@@ -327,7 +420,8 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                     lineHeight: 1.6
                   }}
                 >
-                  This challenge is based on your current mood level. Take your time and be creative!
+                  This challenge is personalized based on your {getMoodLevelName(challengeData.challenge.mood_trigger).toLowerCase()} mood. 
+                  Take your time and be creative!
                 </Typography>
 
                 {challengeData.user_challenge?.photo_url && (
@@ -512,7 +606,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                             gutterBottom
                             sx={{ fontFamily: '"Kalam", cursive', color: '#8761a7' }}
                           >
-                            📁 {selectedFile.name}
+                            {selectedFile.name}
                           </Typography>
                           
                           <Typography 
@@ -520,7 +614,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                             gutterBottom
                             sx={{ fontFamily: '"Kalam", cursive', color: '#8761a7' }}
                           >
-                            📏 Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                            Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                           </Typography>
                           
                           <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
@@ -590,7 +684,7 @@ const DailyChallenge = ({ open, onClose, onSuccess }) => {
                         fontStyle: 'italic'
                       }}
                     >
-                      💡 Upload a photo to show your creative interpretation, or simply mark the challenge as complete!
+                      Upload a photo to show your creative interpretation, or simply mark the challenge as complete!
                     </Typography>
                   </Box>
                 )}
