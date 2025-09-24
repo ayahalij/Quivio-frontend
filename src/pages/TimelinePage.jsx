@@ -471,7 +471,6 @@ const CustomDayCell = ({ children, value }) => {
             alignItems: 'center',
             gap: '3px',
             pointerEvents: 'none',
-            zIndex: 1,
             backgroundColor: '#fffbef', // Add background
             border: '2px solid #8761a7', // Add border here instead
             borderRadius: '8px',
@@ -930,7 +929,7 @@ const CustomDayCell = ({ children, value }) => {
         boxShadow: '0 2px 10px rgba(135, 97, 167, 0.1)',
         position: 'sticky',
         top: 0,
-        zIndex: 1000
+        zIndex: '9999 !important'
       }}>
         <Container maxWidth="lg">
           <Box sx={{ 
@@ -1126,14 +1125,14 @@ const CustomDayCell = ({ children, value }) => {
                   backgroundColor: '#fffbef',
                   border: '3px solid #8761a7',
                   borderRadius: 4,
-                  overflow: 'hidden'
+                  overflow: 'visible'
                 }}>
                   <Box sx={{ 
-                    height: '850px', // Increased height for better day content visibility
+                    height: '850px', 
                     
                     '& .rbc-calendar': {
+                      isolation: 'isolate',
                       fontFamily: '"Kalam", cursive',
-                      position: 'relative '
                     },
                     '& .rbc-header': {
                       backgroundColor: '#cdd475 !important',
@@ -1149,28 +1148,28 @@ const CustomDayCell = ({ children, value }) => {
                       backgroundColor: '#fffbef !important'
                     },
                     '& .rbc-date-cell': {
-  padding: '0 !important',
-  minHeight: '140px !important',
-  position: 'relative !important'
+  padding: '0',
+  minHeight: '140px',
+  position: 'relative'
 },
 '& .rbc-row-content': {
-  minHeight: '140px !important'
+  minHeight: '140px '
 },
 '& .rbc-month-row': {
-  minHeight: '140px !important'
+  minHeight: '140px'
 },
 '& .rbc-day-bg': {
-  minHeight: '140px !important'
+  minHeight: '140px'
 },
                     '& .rbc-date-cell button': {
-                      color: '#8761a7 !important',
-                      fontFamily: '"Kalam", cursive !important',
-                      fontWeight: '600 !important',
-                      fontSize: '1rem !important',
-                      position: 'absolute !important',
-                      top: '4px !important',
-                      left: '4px !important',
-                      zIndex: 2
+                      color: '#8761a7',
+                      fontFamily: '"Kalam", cursive ',
+                      fontWeight: '600 ',
+                      fontSize: '1rem ',
+                      position: 'absolute ',
+                      top: '4px ',
+                      left: '4px ',
+                      zIndex: -200
                     },
                     '& .rbc-today .rbc-date-cell button': {
                       backgroundColor: '#cdd475 !important',
@@ -1186,8 +1185,7 @@ const CustomDayCell = ({ children, value }) => {
                       padding: '12px 16px !important',
                       borderBottom: '3px solid #8761a7 !important',
                       marginBottom: '0 !important',
-                      position: 'sticky !important',
-                      zIndex:'auto !important'
+                      position: 'relative !important',
                     },
                     '& .rbc-toolbar button': {
                       backgroundColor: '#8761a7 !important',
@@ -1742,7 +1740,8 @@ const CustomDayCell = ({ children, value }) => {
                 height: 500,
                 backgroundColor: '#fffbef',
                 border: '3px solid #8761a7',
-                borderRadius: 4
+                borderRadius: 4,
+                isolation: 'isolate'
               }}>
                 <CardContent sx={{ height: '100%', p: 0 }}>
                   {mapLoading ? (
@@ -1799,7 +1798,10 @@ const CustomDayCell = ({ children, value }) => {
                     <MapContainer
                       center={getMapCenter()}
                       zoom={getMapZoom()}
-                      style={{ height: '100%', width: '100%', borderRadius: '12px' }}
+                      style={{ height: '100%', width: '100%', borderRadius: '12px', isolation: 'isolate' }}
+                      zoomControl={true}
+  scrollWheelZoom={true}
+  attributionControl={true}
                     >
                       <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
