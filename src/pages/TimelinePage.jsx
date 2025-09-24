@@ -1,4 +1,4 @@
-// src/pages/TimelinePage.jsx
+// Complete TimelinePage.jsx - React Big Calendar with Day Content
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -61,6 +61,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import PhotoViewer from '../components/common/PhotoViewer';
+// Import React Big Calendar
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+const localizer = momentLocalizer(moment);
 
 // Fix for default markers in Leaflet with React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -327,27 +333,27 @@ const TimelinePage = () => {
     }
   };
 
- const handleViewFullDiary = async (diaryId) => {
-  try {
-    setLoading(true);
-    const fullDiary = await ApiService.getDiaryEntry(diaryId);
-    setSelectedDay(prev => ({
-      ...prev,
-      data: {
-        ...prev.data,
-        diary: {
-          ...prev.data.diary,
-          content: fullDiary.content
+  const handleViewFullDiary = async (diaryId) => {
+    try {
+      setLoading(true);
+      const fullDiary = await ApiService.getDiaryEntry(diaryId);
+      setSelectedDay(prev => ({
+        ...prev,
+        data: {
+          ...prev.data,
+          diary: {
+            ...prev.data.diary,
+            content: fullDiary.content
+          }
         }
-      }
-    }));
-  } catch (error) {
-    console.error('Failed to fetch full diary:', error);
-    setError('Failed to load full diary content');
-  } finally {
-    setLoading(false);
-  }
-};
+      }));
+    } catch (error) {
+      console.error('Failed to fetch full diary:', error);
+      setError('Failed to load full diary content');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchPhotoStats = async () => {
     try {
@@ -402,48 +408,211 @@ const TimelinePage = () => {
     );
   };
 
-  const navigateMonth = (direction) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + direction);
-    setCurrentDate(newDate);
+  // Handle date navigation for React Big Calendar
+  const handleNavigate = (date) => {
+    setCurrentDate(date);
   };
 
-  const getDaysInMonth = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-
-    const days = [];
-    
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null);
-    }
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(day);
-    }
-    
-    return days;
-  };
-
-  const getDayData = (day) => {
-    if (!calendarData || !day) return null;
-    
-    const dateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return calendarData.calendar_data[dateString] || null;
-  };
-
-  const handleDayClick = (day) => {
-    if (!day) return;
-    
-    const dayData = getDayData(day);
-    if (dayData) {
-      setSelectedDay({ day, data: dayData });
+  // Handle day cell click for React Big Calendar
+  const handleSelectSlot = (slotInfo) => {
+    const dateString = moment(slotInfo.start).format('YYYY-MM-DD');
+    if (calendarData && calendarData.calendar_data[dateString]) {
+      const day = slotInfo.start.getDate();
+      setSelectedDay({ day, data: calendarData.calendar_data[dateString] });
     }
   };
+
+  // Handle event click for React Big Calendar
+  const handleSelectEvent = (event) => {
+    const day = event.start.getDate();
+    setSelectedDay({ day, data: event.resource.dayData });
+  };
+
+const CustomDayCell = ({ children, value }) => {
+  const dateString = moment(value).format('YYYY-MM-DD');
+  const dayData = calendarData && calendarData.calendar_data ? calendarData.calendar_data[dateString] : null;
+  const hasData = dayData !== null;
+  const isToday = moment(value).isSame(moment(), 'day');
+
+  return (
+    <div 
+      style={{
+        position: 'relative',
+        height: '100%',
+        minHeight: '140px',
+        width: '100%', // Add this
+        backgroundColor: hasData ? '#fffbef' : 'transparent', // Change to transparent for empty days
+        border: isToday ? '2px solid #cdd475' : 'none', // Simplify border logic
+        borderRadius: hasData ? '8px' : '0px',
+        cursor: hasData ? 'pointer' : 'default',
+        transition: 'all 0.3s ease',
+        overflow: 'visible' // Change from hidden to visible
+      }}
+      onClick={() => {
+        if (hasData) {
+          const day = value.getDate();
+          setSelectedDay({ day, data: dayData });
+        }
+      }}
+    >
+      {children}
+      
+      {/* Only show content overlay for days with data */}
+      {hasData && dayData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '25px',
+            left: '2px',
+            right: '2px',
+            bottom: '2px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '3px',
+            pointerEvents: 'none',
+            zIndex: 1,
+            backgroundColor: '#fffbef', // Add background
+            border: '2px solid #8761a7', // Add border here instead
+            borderRadius: '8px',
+            padding: '3px',
+            justifyContent: 'flex-start'
+          }}
+        >
+          {/* Rest of your content remains the same */}
+          {dayData.mood && (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center',
+    minHeight: '32px', // Add consistent height
+    alignItems: 'center' // Center vertically
+  }}>
+    <MoodDisplay 
+      mood={dayData.mood} 
+      size="small"
+      showLabel={false}
+    />
+  </div>
+)}
+          
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '4px',
+            flexWrap: 'wrap',
+            justifyContent: 'center'
+          }}>
+            {dayData.diary && (
+              <Chip
+                icon={<Edit sx={{ fontSize: 12 }} />}
+                label=""
+                size="small"
+                sx={{
+                  backgroundColor: '#dce291',
+                  border: '1px solid #8761a7',
+                  height: '18px',
+                  minWidth: '18px',
+                  '& .MuiChip-label': { marginLeft: -1 },
+                  '& .MuiChip-icon': { margin: 0 }
+                }}
+                title="Has diary entry"
+              />
+            )}
+            
+            {dayData.photos && dayData.photos.length > 0 && (
+              <Chip
+                icon={<CameraAlt sx={{ fontSize: 12 }} />}
+                label={dayData.photos.length > 1 ? dayData.photos.length : ""}
+                size="small"
+                sx={{
+                  backgroundColor: '#dce291',
+                  border: '1px solid #8761a7',
+                  height: '18px',
+                  minWidth: '18px',
+                  color: '#8761a7',
+                  fontFamily: '"Kalam", cursive',
+                  fontWeight: 600,
+                  fontSize: '0.6rem',
+                  '& .MuiChip-icon': { margin: 0, fontSize: '12px' }
+                }}
+                title={`${dayData.photos.length} photo${dayData.photos.length !== 1 ? 's' : ''}`}
+              />
+            )}
+
+            {dayData.challenge && (
+              <Chip
+                icon={dayData.challenge.is_completed ? 
+                  <CheckCircle sx={{ fontSize: 12 }} /> : 
+                  <Assignment sx={{ fontSize: 12 }} />
+                }
+                label=""
+                size="small"
+                sx={{
+                  backgroundColor: dayData.challenge.is_completed ? '#dce291' : '#ffe0b2',
+                  border: `1px solid ${dayData.challenge.is_completed ? '#8761a7' : '#ff9800'}`,
+                  height: '18px',
+                  minWidth: '18px',
+                  '& .MuiChip-label': { marginLeft: -1 },
+                  '& .MuiChip-icon': { margin: 0 }
+                }}
+                title={
+                  dayData.challenge.is_completed 
+                    ? 'Challenge completed' 
+                    : 'Challenge available'
+                }
+              />
+            )}
+
+            {dayData.capsules && (
+              <>
+                {dayData.capsules.created && dayData.capsules.created.length > 0 && (
+                  <Chip
+                    label="📦"
+                    size="small"
+                    sx={{
+                      backgroundColor: '#e3f2fd',
+                      border: '1px solid #2196f3',
+                      height: '18px',
+                      minWidth: '18px',
+                      fontSize: '10px'
+                    }}
+                    title={`${dayData.capsules.created.length} capsule${dayData.capsules.created.length !== 1 ? 's' : ''} created`}
+                  />
+                )}
+                
+                {dayData.capsules.opened && dayData.capsules.opened.length > 0 && (
+                  <Chip
+                    label="🎉"
+                    size="small"
+                    sx={{
+                      backgroundColor: '#e8f5e8',
+                      border: '1px solid #4caf50',
+                      height: '18px',
+                      minWidth: '18px',
+                      fontSize: '10px'
+                    }}
+                    title={`${dayData.capsules.opened.length} capsule${dayData.capsules.opened.length !== 1 ? 's' : ''} opened`}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+  // Custom day cell styling for React Big Calendar
+  const dayPropGetter = (date) => {
+  return {
+    style: {
+      minHeight: '140px',
+      padding: '0',
+      position: 'relative'
+    }
+  };
+};
 
   const handleMarkerClick = (location) => {
     setSelectedLocation(location);
@@ -495,147 +664,6 @@ const TimelinePage = () => {
 
   const handleSinglePhotoClick = (photo) => {
     handlePhotoClick([photo], 0);
-  };
-
-  const renderDayCard = (day) => {
-    if (!day) {
-      return <Box key={`empty-${Math.random()}`} sx={{ height: 120 }} />;
-    }
-
-    const dayData = getDayData(day);
-    const hasData = dayData !== null;
-    const today = new Date();
-    const isToday = 
-      day === today.getDate() &&
-      currentDate.getMonth() === today.getMonth() &&
-      currentDate.getFullYear() === today.getFullYear();
-
-    return (
-      <Card
-        key={day}
-        sx={{
-          height: 120,
-          cursor: hasData ? 'pointer' : 'default',
-          backgroundColor: hasData ? '#fffbef' : '#f8f9fa',
-          border: isToday ? '3px solid #cdd475' : hasData ? '2px solid #8761a7' : '1px solid #e0e0e0',
-          borderRadius: 3,
-          transition: 'all 0.3s ease',
-          '&:hover': hasData ? { 
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 25px rgba(135, 97, 167, 0.2)'
-          } : {}
-        }}
-        onClick={() => handleDayClick(day)}
-      >
-        <CardContent sx={{ 
-          p: 2, 
-          height: '100%', 
-          display: 'flex', 
-          flexDirection: 'column',
-          justifyContent: 'space-between'
-        }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontWeight: isToday ? 700 : 600,
-              color: isToday ? '#8761a7' : '#8761a7',
-              fontFamily: '"Kalam", cursive',
-              fontSize: '1.1rem'
-            }}
-          >
-            {day}
-          </Typography>
-          
-          {dayData && (
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: 0.5, 
-              alignItems: 'center'
-            }}>
-              {/* Enhanced mood display */}
-              {dayData.mood && (
-                <MoodDisplay 
-                  mood={dayData.mood} 
-                  size="small"
-                  showLabel={false}
-                />
-              )}
-              
-              {/* Activity indicators row */}
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 0.5,
-                flexWrap: 'wrap',
-                justifyContent: 'center'
-              }}>
-                {/* Diary indicator */}
-                {dayData.diary && (
-                  <Chip
-                    icon={<Edit sx={{ fontSize: 14 }} />}
-                    label=""
-                    size="small"
-                    sx={{
-                      backgroundColor: '#dce291',
-                      border: '1px solid #8761a7',
-                      height: '20px',
-                      minWidth: '20px',
-                      '& .MuiChip-label': {marginLeft: -1, }
-                    }}
-                    title="Has diary entry"
-                  />
-                )}
-                
-                {/* Photo indicator */}
-                {dayData.photos && dayData.photos.length > 0 && (
-                  <Chip
-                    icon={<CameraAlt sx={{ fontSize: 14 }} />}
-                    label={dayData.photos.length > 1 ? dayData.photos.length : ""}
-                    size="small"
-                    sx={{
-                      backgroundColor: '#dce291',
-                      border: '1px solid #8761a7',
-                      height: '20px',
-                      minWidth: '20px',
-                      color: '#8761a7',
-                      fontFamily: '"Kalam", cursive',
-                      fontWeight: 600,
-                      fontSize: '0.7rem'
-                    }}
-                    title={`${dayData.photos.length} photo${dayData.photos.length !== 1 ? 's' : ''}`}
-                  />
-                )}
-
-                {/* Challenge indicator */}
-                {dayData.challenge && (
-                  <Chip
-                    icon={dayData.challenge.is_completed ? 
-                      <CheckCircle sx={{ fontSize: 14 }} /> : 
-                      <Assignment sx={{ fontSize: 14 }} />
-                    }
-                    label=""
-                    size="small"
-                    sx={{
-                      backgroundColor: dayData.challenge.is_completed ? '#dce291' : '#ffe0b2',
-                      border: `1px solid ${dayData.challenge.is_completed ? '#8761a7' : '#ff9800'}`,
-                      height: '20px',
-                      minWidth: '20px',
-                      '& .MuiChip-label': {marginLeft: -1, }
-                    }}
-                    title={
-                      dayData.challenge.is_completed 
-                        ? 'Challenge completed' 
-                        : 'Challenge available'
-                    }
-                  />
-                )}
-              </Box>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    );
   };
 
   const handleCapsuleClick = async (capsuleId) => {
@@ -848,7 +876,7 @@ const TimelinePage = () => {
             </Box>
           </Box>
           
-          {mood.note && (
+          {              mood.note && (
             <Card sx={{ 
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               border: `1px solid ${MOOD_COLORS[mood.level]}`,
@@ -1058,110 +1086,156 @@ const TimelinePage = () => {
             </Alert>
           )}
 
-          {/* Calendar Tab */}
+          {/* Calendar Tab - CORRECTED REACT BIG CALENDAR WITH DAY CONTENT */}
           {currentTab === 0 && (
             <>
-              <Card sx={{ 
-                p: 3, 
-                mb: 3,
-                backgroundColor: '#fffbef',
-                border: '3px solid #8761a7',
-                borderRadius: 4
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                  <IconButton 
-                    onClick={() => navigateMonth(-1)}
-                    sx={{
-                      backgroundColor: '#cdd475',
-                      border: '2px solid #8761a7',
-                      color: '#8761a7',
-                      '&:hover': {
-                        backgroundColor: '#dce291',
-                        transform: 'scale(1.1)'
-                      }
-                    }}
-                  >
-                    <ChevronLeft />
-                  </IconButton>
-                  
-                  <Typography 
-                    variant="h4"
-                    sx={{ 
-                      fontFamily: '"Kalam", cursive',
-                      color: '#8761a7',
-                      fontWeight: 700
-                    }}
-                  >
-                    {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </Typography>
-                  
-                  <IconButton 
-                    onClick={() => navigateMonth(1)}
-                    sx={{
-                      backgroundColor: '#cdd475',
-                      border: '2px solid #8761a7',
-                      color: '#8761a7',
-                      '&:hover': {
-                        backgroundColor: '#dce291',
-                        transform: 'scale(1.1)'
-                      }
-                    }}
-                  >
-                    <ChevronRight />
-                  </IconButton>
-                </Box>
-
-                {calendarData && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>
+              {/* Stats Header */}
+              {calendarData && (
+                <Card sx={{ 
+                  mb: 3,
+                  backgroundColor: '#fffbef',
+                  border: '3px solid #8761a7',
+                  borderRadius: 4
+                }}>
+                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
                     <Chip 
-                      label={`${calendarData.total_days_with_entries} days with entries`} 
+                      label={`${calendarData.total_days_with_entries} days with entries this month`} 
                       sx={{
                         backgroundColor: '#dce291',
                         color: '#8761a7',
                         fontFamily: '"Kalam", cursive',
                         fontWeight: 600,
-                        border: '2px solid #8761a7'
+                        border: '2px solid #8761a7',
+                        fontSize: '1rem',
+                        px: 2,
+                        py: 1
                       }}
                       size="medium" 
                     />
-                  </Box>
-                )}
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
+              {/* CORRECTED REACT BIG CALENDAR WITH PROPER DAY CONTENT */}
               {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                   <CircularProgress sx={{ color: '#8761a7' }} />
                 </Box>
               ) : (
-                <>
-                  {/* Calendar Header Days */}
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                    {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
-                      <Grid item xs key={day} sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Typography 
-                          variant="h6" 
-                          sx={{ 
-                            fontWeight: 600, 
-                            color: '#8761a7',
-                            fontFamily: '"Kalam", cursive',
-                            fontSize: '1.1rem'
-                          }}
-                        >
-                          {day.slice(0, 3)}
-                        </Typography>
-                      </Grid>
-                    ))}
-                  </Grid>
-
-                  {/* Calendar Grid - Traditional Monthly View */}
-                  <Grid container spacing={1}>
-                    {getDaysInMonth().map((day, index) => (
-                      <Grid item xs={12/7} key={index} sx={{ display: 'flex' }}>
-                        {renderDayCard(day)}
-                      </Grid>
-                    ))}
-                  </Grid>
-                </>
+                <Card sx={{ 
+                  backgroundColor: '#fffbef',
+                  border: '3px solid #8761a7',
+                  borderRadius: 4,
+                  overflow: 'hidden'
+                }}>
+                  <Box sx={{ 
+                    height: '850px', // Increased height for better day content visibility
+                    
+                    '& .rbc-calendar': {
+                      fontFamily: '"Kalam", cursive',
+                      position: 'relative '
+                    },
+                    '& .rbc-header': {
+                      backgroundColor: '#cdd475 !important',
+                      color: '#8761a7 !important',
+                      fontFamily: '"Kalam", cursive !important',
+                      fontWeight: '600 !important',
+                      fontSize: '1.1rem !important',
+                      padding: '12px 8px !important',
+                      border: 'none !important',
+                      borderBottom: '2px solid #8761a7 !important'
+                    },
+                    '& .rbc-month-view': {
+                      backgroundColor: '#fffbef !important'
+                    },
+                    '& .rbc-date-cell': {
+  padding: '0 !important',
+  minHeight: '140px !important',
+  position: 'relative !important'
+},
+'& .rbc-row-content': {
+  minHeight: '140px !important'
+},
+'& .rbc-month-row': {
+  minHeight: '140px !important'
+},
+'& .rbc-day-bg': {
+  minHeight: '140px !important'
+},
+                    '& .rbc-date-cell button': {
+                      color: '#8761a7 !important',
+                      fontFamily: '"Kalam", cursive !important',
+                      fontWeight: '600 !important',
+                      fontSize: '1rem !important',
+                      position: 'absolute !important',
+                      top: '4px !important',
+                      left: '4px !important',
+                      zIndex: 2
+                    },
+                    '& .rbc-today .rbc-date-cell button': {
+                      backgroundColor: '#cdd475 !important',
+                      borderRadius: '50% !important',
+                      width: '24px !important',
+                      height: '24px !important'
+                    },
+                    '& .rbc-off-range-bg': {
+                      backgroundColor: '#f5f5f5 !important'
+                    },
+                    '& .rbc-toolbar': {
+                      backgroundColor: '#cdd475 !important',
+                      padding: '12px 16px !important',
+                      borderBottom: '3px solid #8761a7 !important',
+                      marginBottom: '0 !important',
+                      position: 'sticky !important',
+                      zIndex:'auto !important'
+                    },
+                    '& .rbc-toolbar button': {
+                      backgroundColor: '#8761a7 !important',
+                      color: 'white !important',
+                      border: '2px solid #8761a7 !important',
+                      borderRadius: '8px !important',
+                      fontFamily: '"Kalam", cursive !important',
+                      fontWeight: '600 !important',
+                      padding: '8px 16px !important',
+                      margin: '0 4px !important',
+                      cursor: 'pointer !important',
+                      position: 'static !important',
+                    },
+                    '& .rbc-toolbar button:hover': {
+                      backgroundColor: '#9e7ebf !important',
+                      transform: 'scale(1.05) !important'
+                    },
+                    '& .rbc-toolbar button.rbc-active': {
+                      backgroundColor: '#fffbef !important',
+                      color: '#8761a7 !important'
+                    },
+                    '& .rbc-toolbar-label': {
+                      color: '#8761a7 !important',
+                      fontFamily: '"Kalam", cursive !important',
+                      fontSize: '1.5rem !important',
+                      fontWeight: '700 !important'
+                    }
+                  }}>
+                    <Calendar
+                      localizer={localizer}
+                      events={[]} // We're not using events, just day content
+                      startAccessor="start"
+                      endAccessor="end"
+                      views={['month']}
+                      defaultView="month"
+                      date={currentDate}
+                      onNavigate={handleNavigate}
+                      onSelectSlot={handleSelectSlot}
+                      selectable
+                      components={{
+                        dateCellWrapper: CustomDayCell
+                      }}
+                      dayPropGetter={dayPropGetter}
+                      popup={false}
+                      showMultiDayTimes={false}
+                    />
+                  </Box>
+                </Card>
               )}
             </>
           )}
@@ -1847,7 +1921,7 @@ const TimelinePage = () => {
             </Box>
           )}
 
-          {/* Day Detail Modal */}
+          {/* Day Detail Modal - Enhanced with all features from original */}
           {selectedDay && (
             <Card sx={{ 
               mt: 4, 
@@ -1887,86 +1961,82 @@ const TimelinePage = () => {
               </Box>
 
               {/* Enhanced Mood Section */}
-
-
-
-               {/* Enhanced Mood Section */}
               {selectedDay.data.mood && renderMoodSection(selectedDay.data.mood)}
-            {selectedDay.data.diary && (
-  <Box sx={{ mb: 3 }}>
-    <Typography 
-      variant="h6" 
-      gutterBottom
-      sx={{ 
-        fontFamily: '"Kalam", cursive',
-        color: '#8761a7',
-        fontWeight: 600
-      }}
-    >
-      Diary Entry
-    </Typography>
-    <Card sx={{ 
-      backgroundColor: '#dce291',
-      border: '2px solid #8761a7',
-      borderRadius: 2,
-      p: 3
-    }}>
-      <Typography 
-        variant="body1"
-        sx={{ 
-          color: '#8761a7',
-          fontFamily: '"Kalam", cursive',
-          fontSize: '1.1rem',
-          lineHeight: 1.6,
-          mb: 2,
-          whiteSpace: 'pre-wrap' // This preserves line breaks
-        }}
-      >
-        {selectedDay.data.diary.content || selectedDay.data.diary.excerpt}
-      </Typography>
-      
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-        <Chip
-          label={`${selectedDay.data.diary.word_count} words${!selectedDay.data.diary.content ? ' (excerpt shown)' : ''}`}
-          size="small"
-          sx={{
-            backgroundColor: '#cdd475',
-            color: '#8761a7',
-            fontFamily: '"Kalam", cursive',
-            fontWeight: 600,
-            border: '1px solid #8761a7'
-          }}
-        />
-        
-        {/* Show "Read Full Entry" button only if we don't have full content */}
-        {!selectedDay.data.diary.content && selectedDay.data.diary.id && (
-          <Button
-            size="small"
-            onClick={() => handleViewFullDiary(selectedDay.data.diary.id)}
-            disabled={loading}
-            sx={{
-              backgroundColor: '#8761a7',
-              color: 'white',
-              fontFamily: '"Kalam", cursive',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              borderRadius: 2,
-              textTransform: 'none',
-              '&:hover': {
-                backgroundColor: '#6b4c87'
-              },
-              '&:disabled': {
-                backgroundColor: '#ccc'
-              }
-            }}
-          >
-            {loading ? 'Loading...' : 'Read Full Entry'}
-          </Button>
-        )}
-      </Box>
-    </Card>
-  </Box>
-)}
+              
+              {selectedDay.data.diary && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography 
+                    variant="h6" 
+                    gutterBottom
+                    sx={{ 
+                      fontFamily: '"Kalam", cursive',
+                      color: '#8761a7',
+                      fontWeight: 600
+                    }}
+                  >
+                    Diary Entry
+                  </Typography>
+                  <Card sx={{ 
+                    backgroundColor: '#dce291',
+                    border: '2px solid #8761a7',
+                    borderRadius: 2,
+                    p: 3
+                  }}>
+                    <Typography 
+                      variant="body1"
+                      sx={{ 
+                        color: '#8761a7',
+                        fontFamily: '"Kalam", cursive',
+                        fontSize: '1.1rem',
+                        lineHeight: 1.6,
+                        mb: 2,
+                        whiteSpace: 'pre-wrap'
+                      }}
+                    >
+                      {selectedDay.data.diary.content || selectedDay.data.diary.excerpt}
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                      <Chip
+                        label={`${selectedDay.data.diary.word_count} words${!selectedDay.data.diary.content ? ' (excerpt shown)' : ''}`}
+                        size="small"
+                        sx={{
+                          backgroundColor: '#cdd475',
+                          color: '#8761a7',
+                          fontFamily: '"Kalam", cursive',
+                          fontWeight: 600,
+                          border: '1px solid #8761a7'
+                        }}
+                      />
+                      
+                      {!selectedDay.data.diary.content && selectedDay.data.diary.id && (
+                        <Button
+                          size="small"
+                          onClick={() => handleViewFullDiary(selectedDay.data.diary.id)}
+                          disabled={loading}
+                          sx={{
+                            backgroundColor: '#8761a7',
+                            color: 'white',
+                            fontFamily: '"Kalam", cursive',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            '&:hover': {
+                              backgroundColor: '#6b4c87'
+                            },
+                            '&:disabled': {
+                              backgroundColor: '#ccc'
+                            }
+                          }}
+                        >
+                          {loading ? 'Loading...' : 'Read Full Entry'}
+                        </Button>
+                      )}
+                    </Box>
+                  </Card>
+                </Box>
+              )}
 
               {selectedDay.data.photos && selectedDay.data.photos.length > 0 && (
                 <Box sx={{ mb: 3 }}>
@@ -2067,6 +2137,7 @@ const TimelinePage = () => {
                 </Box>
               )}
 
+              {/* Memory Capsules Section */}
               {selectedDay.data.capsules && (
                 <Box sx={{ mb: 3 }}>
                   <Typography 
@@ -2241,6 +2312,7 @@ const TimelinePage = () => {
                 </Box>
               )}
 
+              {/* Challenge Section */}
               {selectedDay.data.challenge && (
                 <Box sx={{ mb: 3 }}>
                   <Typography 
@@ -2801,4 +2873,4 @@ const TimelinePage = () => {
   );
 };
 
-export default TimelinePage;
+export default TimelinePage

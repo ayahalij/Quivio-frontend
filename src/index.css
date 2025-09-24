@@ -21,3 +21,58 @@ code {
 * {
   box-sizing: border-box;
 }
+
+
+.rbc-calendar {
+  font-family: "Kalam", cursive !important;
+}
+
+.rbc-header {
+  background-color: #cdd475 !important;
+  color: #8761a7 !important;
+  font-weight: 600 !important;
+  border: none !important;
+  border-bottom: 2px solid #8761a7 !important;
+}
+
+.rbc-month-view {
+  background-color: #fffbef !important;
+  border: 3px solid #8761a7 !important;
+  border-radius: 12px !important;
+}
+
+.rbc-date-cell {
+  min-height: 120px !important;
+  padding: 8px !important;
+}
+
+.rbc-today {
+  background-color: #fff3cd !important;
+}
+
+.rbc-toolbar {
+  background-color: #cdd475 !important;
+  padding: 12px 16px !important;
+  border-bottom: 3px solid #8761a7 !important;
+}
+
+.rbc-toolbar button {
+  background-color: #8761a7 !important;
+  color: white !important;
+  border: 2px solid #8761a7 !important;
+  border-radius: 8px !important;
+  font-family: "Kalam", cursive !important;
+  font-weight: 600 !important;
+}
+
+.rbc-toolbar button:hover {
+  background-color: #9e7ebf !important;
+  transform: scale(1.05) !important;
+}
+
+.rbc-toolbar-label {
+  color: #8761a7 !important;
+  font-family: "Kalam", cursive !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+}
