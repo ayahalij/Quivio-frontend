@@ -434,7 +434,7 @@ const CustomDayCell = ({ children, value }) => {
   const hasData = dayData !== null;
   const isToday = moment(value).isSame(moment(), 'day');
 
-  const handleDayClick = (e) => {
+const handleDayClick = (e) => {
   e.preventDefault();
   e.stopPropagation();
   if (hasData) {
@@ -443,24 +443,37 @@ const CustomDayCell = ({ children, value }) => {
   }
 };
 
-  return (
-    <div 
-  style={{
-    position: 'relative',
-    height: '100%',
-    minHeight: '140px',
-    width: '100%',
-    backgroundColor: hasData ? '#fffbef' : 'transparent',
-    border: isToday ? '2px solid #cdd475' : 'none',
-    borderRadius: hasData ? '8px' : '0px',
-    cursor: hasData ? 'pointer' : 'default',
-    transition: 'all 0.3s ease',
-    overflow: 'visible',
-    touchAction: 'manipulation' // Add this line
-  }}
-  onClick={handleDayClick} // Change this
-  onTouchStart={handleDayClick} // Add this line
->
+const handleTouchEnd = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (hasData) {
+    const day = value.getDate();
+    setSelectedDay({ day, data: dayData });
+  }
+};
+
+return (
+  <div 
+    style={{
+      position: 'relative',
+      height: '100%',
+      minHeight: '140px',
+      width: '100%',
+      backgroundColor: hasData ? '#fffbef' : 'transparent',
+      border: isToday ? '2px solid #cdd475' : 'none',
+      borderRadius: hasData ? '8px' : '0px',
+      cursor: hasData ? 'pointer' : 'default',
+      transition: 'all 0.3s ease',
+      overflow: 'visible',
+      touchAction: 'manipulation',
+      WebkitTouchCallout: 'none', // Disable iOS callout
+      WebkitUserSelect: 'none',   // Disable text selection
+      userSelect: 'none'          // Disable text selection
+    }}
+    onClick={handleDayClick}
+    onTouchEnd={handleTouchEnd}  // Changed from onTouchStart to onTouchEnd
+    onTouchStart={(e) => e.preventDefault()} // Prevent default touch behavior
+  >
       {children}
       
       {/* Only show content overlay for days with data */}
