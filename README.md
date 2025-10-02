@@ -3,7 +3,7 @@
 A comprehensive digital wellness companion that helps users track their mental health journey through multiple mediums including mood tracking, written journaling, photography, interactive challenges, and time-locked memory capsules.
 
 ## Try it out
-Check out the live demo [here](https://quivio-frontend-git-main-ayahalijs-projects.vercel.app/) to explore the project in action.
+Check out the live demo [here](https://quivio.netlify.app/) to explore the project in action.
 
 
 ## Trello Board
@@ -244,8 +244,8 @@ npm test
 ## 📦 Deployment
 
 ### Production Deployment
-1. **Backend:** Deploy to Railway, Render, or Heroku
-2. **Frontend:** Deploy to Vercel or Netlify
+1. **Backend:** Deploy to Render (DB & API)
+2. **Frontend:** Deploy to Netlify
 3. **Database:** Migrate to PostgreSQL
 4. **File Storage:** Configure Cloudinary for production
 5. **Domain:** Set up custom domain with SSL
@@ -256,24 +256,12 @@ npm test
 - Configure production email settings
 - Set up production database connection
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -m "Add feature"`
-4. Push to branch: `git push origin feature-name`
-5. Submit a pull request
-
 ### Development Guidelines
 - Follow PEP 8 for Python code
 - Use ESLint and Prettier for JavaScript/React code
 - Write comprehensive tests for new features
 - Update documentation for API changes
 - Maintain consistent styling with existing codebase
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🐛 Known Issues
 
@@ -335,4 +323,4 @@ The skills, confidence, and professional network gained through General Assembly
 *Demonstrating full-stack development proficiency and real-world application building*
 
 ---
-![QR](QR.png)
+![QR](QuivioQR.jpg)
