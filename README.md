@@ -2,14 +2,14 @@
 
 A comprehensive digital wellness companion that helps users track their mental health journey through multiple mediums including mood tracking, written journaling, photography, interactive challenges, and time-locked memory capsules.
 
-## Try it out
+## ⚡ Try it out
 Check out the live demo [here](https://quivio.netlify.app/) to explore the project in action.
 
 
-## Trello Board
+## 📋 Trello Board
 Project tasks and progress are managed through [Trello](https://trello.com/b/Tud0owvz/quivio), ensuring smooth workflow and collaboration.
 
-## Framework
+## 🖼 Framework
 This project is built using the Canva framework, providing a solid foundation for scalability and performance.
 
 ![alt text](Username.png)
